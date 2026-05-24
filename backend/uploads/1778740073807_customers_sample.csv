@@ -1,0 +1,21 @@
+first_name,last_name,email,phone,customer_type,primary_source,status,dealer_code
+John,Smith,john.smith@example.com,+1-555-0101,B2C Customer,Commerce Cloud,Active,
+Emma,Wilson,emma.wilson@example.com,+1-555-0102,Employee,Paycom,Active,
+Michael,Brown,michael.brown@example.com,+1-555-0103,B2C Customer,Commerce Cloud,Active,
+Sarah,Davis,sarah.davis@example.com,+1-555-0104,Employee,Paycom,Active,
+James,Taylor,james.taylor@example.com,+1-555-0105,Employee,Paycom,Active,
+Lisa,Anderson,lisa.anderson@example.com,+1-555-0106,B2C Customer,Commerce Cloud,Active,
+Robert,Martinez,robert.martinez@example.com,+1-555-0107,Dealer,SAP,Active,DLR-001
+Patricia,Thompson,patricia.thompson@example.com,+1-555-0108,B2C Customer,Commerce Cloud,Active,
+Charles,Garcia,charles.garcia@example.com,+1-555-0109,Dealer,SAP,Active,DLR-002
+Barbara,Miller,barbara.miller@example.com,+1-555-0110,Employee,Paycom,Active,
+Thomas,Wilson,thomas.wilson@example.com,+1-555-0111,B2C Customer,Commerce Cloud,Inactive,
+Jessica,Moore,jessica.moore@example.com,+1-555-0112,B2C Customer,Commerce Cloud,Active,
+Christopher,Taylor,chris.taylor@example.com,+1-555-0113,Dealer,SAP,Active,DLR-003
+Amanda,Jackson,amanda.jackson@example.com,+1-555-0114,Employee,Paycom,Active,
+Daniel,White,daniel.white@example.com,+1-555-0115,B2C Customer,Commerce Cloud,Active,
+Ashley,Harris,ashley.harris@example.com,+1-555-0116,B2C Customer,Commerce Cloud,Active,
+Matthew,Martin,matthew.martin@example.com,+1-555-0117,Dealer,SAP,Inactive,DLR-004
+Stephanie,Thompson,stephanie.t@example.com,+1-555-0118,Employee,Paycom,Active,
+Joshua,Garcia,joshua.garcia@example.com,+1-555-0119,B2C Customer,Commerce Cloud,Active,
+Megan,Martinez,megan.martinez@example.com,+1-555-0120,B2C Customer,Commerce Cloud,Active,
