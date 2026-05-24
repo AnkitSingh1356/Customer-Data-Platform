@@ -85,3 +85,4 @@ Duplicate detection: **email** (upsert on conflict)
 - `customers` — master customer records
 - `bulk_upload_jobs` — upload job tracking (status, counts, error log)
 - `upload_errors` — per-row error details
+# Customer-Data-Platform
