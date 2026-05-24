@@ -1,0 +1,173 @@
+const pool = require("../config/db");
+
+async function getCustomers({
+  type,
+  status,
+  source,
+  search,
+  page = 1,
+  limit = 20,
+}) {
+  const conditions = [];
+  const params = [];
+  let p = 1;
+
+  if (type && type !== "all") {
+    conditions.push(`customer_type  ILIKE $${p++}`);
+    params.push(type);
+  }
+  if (status && status !== "all") {
+    conditions.push(`status         ILIKE $${p++}`);
+    params.push(status);
+  }
+  if (source && source !== "all") {
+    conditions.push(`primary_source ILIKE $${p++}`);
+    params.push(source);
+  }
+
+  if (search) {
+    conditions.push(
+      `(first_name ILIKE $${p} OR last_name ILIKE $${p} OR
+        email ILIKE $${p} OR cdp_id ILIKE $${p} OR
+        phone ILIKE $${p} OR dealer_code ILIKE $${p})`,
+    );
+    params.push(`%${search}%`);
+    p++;
+  }
+
+  const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
+  const offset = (page - 1) * limit;
+
+  const countRes = await pool.query(
+    `SELECT COUNT(*) FROM customers ${where}`,
+    params,
+  );
+  const total = parseInt(countRes.rows[0].count, 10);
+
+  const dataRes = await pool.query(
+    `SELECT
+       cdp_id,
+       CONCAT(first_name, ' ', COALESCE(last_name, '')) AS customer_name,
+       customer_type,
+       primary_source,
+       status,
+       TO_CHAR(updated_at, 'Mon DD, YYYY') AS last_updated
+     FROM customers ${where}
+     ORDER BY updated_at DESC
+     LIMIT $${p} OFFSET $${p + 1}`,
+    [...params, limit, offset],
+  );
+
+  return { customers: dataRes.rows, total, page, limit };
+}
+
+async function getStats() {
+  const res = await pool.query(`
+    WITH current_stats AS (
+      SELECT
+        COUNT(*) AS total_customers,
+
+        COUNT(*) FILTER (
+          WHERE status = 'Active'
+            AND DATE_TRUNC('month', updated_at) = DATE_TRUNC('month', CURRENT_DATE)
+        ) AS active_this_month,
+
+        COUNT(*) FILTER (
+          WHERE DATE_TRUNC('week', created_at) = DATE_TRUNC('week', CURRENT_DATE)
+        ) AS new_this_week,
+
+        COALESCE(
+          ROUND(
+            AVG(
+              CASE
+                WHEN lifetime_value > 0
+                THEN lifetime_value
+              END
+            )::numeric,
+            2
+          ),
+          0
+        ) AS avg_lifetime_value
+      FROM customers
+    ),
+
+    previous_stats AS (
+      SELECT
+        GREATEST(
+          COUNT(*) FILTER (
+            WHERE status = 'Active'
+              AND updated_at >= NOW() - INTERVAL '60 days'
+              AND updated_at < NOW() - INTERVAL '30 days'
+          ),
+          1
+        ) AS prev_active_month,
+    
+        GREATEST(
+          COUNT(*) FILTER (
+            WHERE created_at >= NOW() - INTERVAL '14 days'
+              AND created_at < NOW() - INTERVAL '7 days'
+          ),
+          1
+        ) AS prev_new_week,
+    
+        GREATEST(
+          COALESCE(
+            ROUND(
+              AVG(
+                CASE
+                  WHEN created_at < NOW() - INTERVAL '30 days'
+                  THEN NULLIF(lifetime_value, 0)
+                END
+              )::numeric,
+              2
+            ),
+            1
+          ),
+          1
+        ) AS prev_avg_lifetime_value
+    
+      FROM customers
+    )
+
+    SELECT
+  c.total_customers,
+
+  ROUND(
+    (c.total_customers::numeric
+    / NULLIF(c.total_customers, 0)) * 100,
+    1
+  ) AS total_growth,
+
+  c.active_this_month,
+  c.new_this_week,
+  c.avg_lifetime_value,
+
+      ROUND(
+        (c.active_this_month::numeric
+        / NULLIF(c.total_customers, 0)) * 100,
+        1
+      ) AS active_growth,
+
+      ROUND(
+        (c.new_this_week::numeric
+        / NULLIF(c.total_customers, 0)) * 100,
+        1
+      ) AS new_growth,
+
+      CASE
+        WHEN p.prev_avg_lifetime_value = 0 THEN 0
+        ELSE ROUND(
+          ((c.avg_lifetime_value - p.prev_avg_lifetime_value)::numeric
+          / NULLIF(p.prev_avg_lifetime_value, 0)) * 100,
+          1
+        ) 
+      END AS avg_lifetime_growth
+
+    FROM current_stats c
+    CROSS JOIN previous_stats p
+  `);
+
+  return res.rows[0];
+}
+
+module.exports = { getCustomers, getStats };
