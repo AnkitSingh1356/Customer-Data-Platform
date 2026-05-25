@@ -1,4 +1,4 @@
-# CDP Backend — Bulk Upload API
+# CDP Backend 
 
 Node.js + Express + PostgreSQL backend for the Customer 360 Bulk Upload feature.
 
