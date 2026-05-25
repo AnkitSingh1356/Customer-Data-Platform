@@ -11,6 +11,8 @@ const authRoutes     = require("./routes/authRoutes");
 const dealerRoutes   = require("./routes/dealerRoutes");
 const behavioralAnalyticsRoutes = require("./routes/behavioralAnalyticsRoutes");
 const consentComplianceRoutes = require("./routes/consentComplianceRoutes");
+const promotionalEffectivenessRoutes =
+require("./routes/promotionalEffectivenessRoutes");
 const app  = express();
 const PORT = parseInt(process.env.PORT || "5000");
 
@@ -41,7 +43,10 @@ app.use(
     "/api/consent-compliance",
     consentComplianceRoutes
   );
-
+  app.use(
+    "/api/promotional-effectiveness",
+    promotionalEffectivenessRoutes
+  );
 app.use((err, _req, res, _next) => {
 console.error("[Server Error]", err);
 
