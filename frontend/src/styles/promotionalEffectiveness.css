@@ -1,0 +1,120 @@
+.promo-page {
+    padding: 24px;
+  }
+  
+  .promo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  
+  .promo-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .promo-chart-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  
+  .promo-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  
+  .promo-table-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .promo-filters {
+    display: flex;
+    gap: 12px;
+  }
+  
+  .promo-filters input,
+  .promo-filters select {
+    height: 40px;
+    border: 1px solid #dbe3ea;
+    border-radius: 8px;
+    padding: 0 14px;
+  }
+  
+  .promo-export-btn {
+    background: #0ea5e9;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    height: 42px;
+    padding: 0 18px;
+  }
+  
+  .promo-status {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .promo-status.active {
+    background: #e0f2fe;
+    color: #0284c7;
+  }
+  
+  .promo-status.draft {
+    background: #f1f5f9;
+    color: #475569;
+  }
+  
+  .promo-status.completed {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+  
+  .promo-view-btn {
+    background: transparent;
+    border: none;
+    color: #0ea5e9;
+  }
+  
+  .promo-modal {
+    width: 600px;
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+  }
+  
+  .promo-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    border: none;
+    background: transparent;
+  }
+  
+  .promo-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-top: 24px;
+  }
+  
+  .promo-modal-grid span {
+    display: block;
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+  
+  .promo-modal-grid strong {
+    font-size: 18px;
+  }

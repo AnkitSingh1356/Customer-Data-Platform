@@ -1,4 +1,3 @@
-//cdp-bulk-upload\sidebar-app\src\App.jsx
 import { useState } from "react";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import Sidebar from "./components/Sidebar/Sidebar";
@@ -11,6 +10,7 @@ import { canAccess } from "./config/personaConfig";
 import DealerNetworkPage from "./pages/DealerNetwork/DealerNetworkPage";
 import BehavioralAnalyticsPage from "./pages/BehavioralAnalytics/BehavioralAnalyticsPage";
 import ConsentCompliancePage from "./pages/Compliance/ConsentCompliancePage";
+import PromotionalEffectivenessPage from "./pages/PromotionalEffectiveness/PromotionalEffectivenessPage";
 function AppShell() {
   const { user, persona, logout } = useAuth();
 
@@ -24,6 +24,7 @@ function AppShell() {
     if (activeNav === "customer360") return <Customer360Page />;
     if (activeNav === "dealer-network") return <DealerNetworkPage />;
     if (activeNav === "behavioral-analytics") return <BehavioralAnalyticsPage />;
+    if (activeNav === "promotional") return <PromotionalEffectivenessPage />;
     if (activeNav === "consent-compliance") {
       return <ConsentCompliancePage />;
     }
