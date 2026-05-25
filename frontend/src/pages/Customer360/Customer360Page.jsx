@@ -378,6 +378,13 @@ const Customer360Page = () => {
     onSuccess={fetchCustomers}
   />
 )}
+
+      {selectedCdpId && (
+        <CustomerProfileModal
+          cdpId={selectedCdpId}
+          onClose={() => setSelectedCdpId(null)}
+        />
+      )}
     </div>
   );
 };
