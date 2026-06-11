@@ -1,5 +1,5 @@
-//cdp-bulk-upload\sidebar-app\src\components\DealerNetwork\useDealers.jsx
 import { useState, useEffect, useCallback } from "react";
+import apiFetch from "../../services/apiFetch";
 
 const BASE = `${import.meta.env.VITE_API_BASE_URL}/api/dealers`;
 
@@ -14,8 +14,8 @@ export function useDealers(search = "") {
     try {
       const params = search ? `?search=${encodeURIComponent(search)}` : "";
       const [dRes, sRes] = await Promise.all([
-        fetch(`${BASE}${params}`),
-        fetch(`${BASE}/stats`),
+        apiFetch(`${BASE}${params}`),
+        apiFetch(`${BASE}/stats`),
       ]);
       if (!dRes.ok || !sRes.ok) throw new Error("API unavailable");
       const [d, s] = await Promise.all([dRes.json(), sRes.json()]);
@@ -31,14 +31,14 @@ export function useDealers(search = "") {
 }
 
 export async function fetchDealerDetail(code) {
-  const res  = await fetch(`${BASE}/${code}`);
+  const res  = await apiFetch(`${BASE}/${code}`);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to load dealer.");
   return data;
 }
 
 export async function submitAccessRequest(code, target_uuid) {
-  const res  = await fetch(`${BASE}/${code}/access`, {
+  const res  = await apiFetch(`${BASE}/${code}/access`, {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
     body:    JSON.stringify({ target_uuid }),

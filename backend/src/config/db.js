@@ -12,13 +12,18 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
-// pool.on("error", (err) => {
-//   console.error("[DB] Unexpected pool error:", err.message);
-// });
+pool.on("error", (err) => {
+  console.error("[DB] Unexpected pool error:", err.message);
+});
 
 pool.connect()
-.then(() => {
-console.log("✅ PostgreSQL connected successfully");
-})
+  .then((client) => {
+    console.log("✅ PostgreSQL connected successfully");
+    client.release();
+  })
+  .catch((err) => {
+    console.error("[DB] Failed to connect to PostgreSQL:", err.message);
+    process.exit(1);
+  });
 
 module.exports = pool;

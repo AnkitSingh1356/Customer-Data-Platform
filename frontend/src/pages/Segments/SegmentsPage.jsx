@@ -1,10 +1,12 @@
-//cdp-bulk-upload\sidebar-app\src\pages\Segments\SegmentsPage.jsx
 import { useEffect, useState, useMemo } from "react";
+import { useDebounce } from "../../hooks/useDebounce";
 import { useSegments }       from "../../components/Segments/useSegments";
 import SegmentModal          from "../../components/Segments/SegmentModal";
 import DeleteConfirmModal    from "../../components/Segments/DeleteConfirmModal";
 import Toast                 from "../../components/Segments/Toast";
 import { getPermissions }    from "../../config/personaConfig";
+import { useAuth }           from "../../auth/AuthContext";
+import { useRBAC }           from "../../auth/RBACContext";
 import Pagination from "../../components/common/Pagination";
 import DataTable from "../../components/common/DataTable";
 import KpiCard from "../../components/common/KpiCard";
@@ -17,9 +19,21 @@ const rulesLabel = (rules = []) => {
 const fmtNum = (n) => Number(n ?? 0).toLocaleString();
 
 const SegmentsPage = ({ persona = "admin" }) => {
-  const perms = getPermissions(persona, "segments");
+  const { user }          = useAuth();
+  const { hasPermission } = useRBAC();
+  const isAdmin = user?.role === "admin";
+
+  // Admins use static persona config; customers use RBAC grants
+  const perms = isAdmin
+    ? getPermissions(persona, "segments")
+    : {
+        create: hasPermission("segments", "create"),
+        edit:   hasPermission("segments", "update"),
+        delete: hasPermission("segments", "delete"),
+      };
 
   const [search,       setSearch]       = useState("");
+  const debouncedSearch = useDebounce(search);
   const [filterStatus, setFilterStatus] = useState("");
   const [modal,        setModal]        = useState(null);
   const [selected,     setSelected]     = useState(null); 
@@ -32,7 +46,7 @@ const [limit, setLimit] = useState(5);
 
   const { segments, stats, loading, error,
           createSegment, updateSegment, deleteSegment } = useSegments({
-    search:  search,
+    search:  debouncedSearch,
     status:  filterStatus,
   });
 

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import NavItem from "./NavItem";
-import { navItemsByPersona } from "../../data/navItems";
+import { navItemsByPersona, allNavItems } from "../../data/navItems";
+import { useRBAC } from "../../auth/RBACContext";
 
 const Sidebar = ({ persona = "admin", activeId, onNavClick }) => {
+  const { canAccessMenu } = useRBAC();
   const [internalActive, setInternalActive] = useState("dashboard");
   const currentActive = activeId ?? internalActive;
   const handleClick = (id) => {
@@ -10,7 +12,10 @@ const Sidebar = ({ persona = "admin", activeId, onNavClick }) => {
     onNavClick?.(id);
   };
 
-  const items = navItemsByPersona[persona] ?? navItemsByPersona.admin;
+  const isAdmin = persona === "admin";
+  const items = isAdmin
+    ? (navItemsByPersona[persona] ?? navItemsByPersona.admin)
+    : allNavItems.filter((item) => canAccessMenu(item.id));
 
   return (
     <aside className="sidebar">

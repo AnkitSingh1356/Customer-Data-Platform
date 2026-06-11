@@ -1,4 +1,3 @@
-//cdp-bulk-upload\cdp-backend\src\utils\csvParser.js
 const csv = require("csv-parser");
 const fs  = require("fs");
 
@@ -13,25 +12,38 @@ const ACCEPTED_COLUMNS = new Set([
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_ROWS  = parseInt(process.env.MAX_ROWS_PER_UPLOAD || "10000");
 
+const FORMULA_PREFIX_RE = /^[=+\-@\t\r]/;
+
+function sanitizeCell(value) {
+  if (typeof value === "string" && FORMULA_PREFIX_RE.test(value)) {
+    return "'" + value;
+  }
+  return value;
+}
+
 function parseCSV(filePath) {
   return new Promise((resolve, reject) => {
     const rows   = [];
     const errors = [];
-    let   rowNum = 1; 
+    let   rowNum = 1;
+    let   stream = null;
 
-    fs.createReadStream(filePath)
+    stream = fs.createReadStream(filePath)
       .pipe(csv({ mapHeaders: ({ header }) => header.trim().toLowerCase() }))
       .on("data", (raw) => {
         rowNum++;
 
         if (rowNum > MAX_ROWS + 1) {
-          errors.push(`Row ${rowNum}: Exceeded max ${MAX_ROWS} rows — remaining rows ignored.`);
+          if (rowNum === MAX_ROWS + 2) {
+            errors.push(`Exceeded max ${MAX_ROWS} rows — remaining rows were ignored.`);
+            stream.destroy();
+          }
           return;
         }
 
         const row = {};
         for (const [k, v] of Object.entries(raw)) {
-          if (ACCEPTED_COLUMNS.has(k)) row[k] = (v || "").trim();
+          if (ACCEPTED_COLUMNS.has(k)) row[k] = sanitizeCell((v || "").trim());
         }
 
         const rowErrors = validateRow(row, rowNum);
@@ -41,8 +53,12 @@ function parseCSV(filePath) {
           rows.push({ ...row, _rowNum: rowNum });
         }
       })
-      .on("end", () => resolve({ rows, errors }))
-      .on("error", reject);
+      .on("end",   () => resolve({ rows, errors }))
+      .on("close", () => resolve({ rows, errors })) // fires when stream.destroy() is called
+      .on("error", (err) => {
+        stream.destroy();
+        reject(err);
+      });
   });
 }
 
@@ -56,11 +72,11 @@ function validateRow(row, rowNum) {
   }
 
   if (row.email && !EMAIL_RE.test(row.email)) {
-    errs.push(`Row ${rowNum}: Invalid email "${row.email}".`);
+    errs.push(`Row ${rowNum}: Invalid email format — value rejected.`);
   }
 
   if (row.status && !["active", "inactive", "pending"].includes(row.status.toLowerCase())) {
-    errs.push(`Row ${rowNum}: Unknown status "${row.status}" — must be Active/Inactive/Pending.`);
+    errs.push(`Row ${rowNum}: Unknown status value — must be Active, Inactive, or Pending.`);
   }
 
   return errs;

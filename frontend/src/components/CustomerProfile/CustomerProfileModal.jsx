@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import ProfileHeader  from "./ProfileHeader";
 import ProfileDetails from "./ProfileDetails";
 import ProfileSections from "./ProfileSections";
+import apiFetch from "../../services/apiFetch";
 
 const API = `${import.meta.env.VITE_API_BASE_URL}/api/customers`;
 
@@ -14,7 +15,7 @@ const CustomerProfileModal = ({ cdpId, onClose }) => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API}/${cdpId}/profile`);
+      const res = await apiFetch(`${API}/${cdpId}/profile`);
       if (!res.ok) throw new Error("Profile not found.");
       const data = await res.json();
       setProfile(data);
@@ -29,7 +30,7 @@ const CustomerProfileModal = ({ cdpId, onClose }) => {
 
   const handleAddAttribute = async (payload) => {
     try {
-      const res = await fetch(`${API}/${cdpId}/attributes`, {
+      const res = await apiFetch(`${API}/${cdpId}/attributes`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify(payload),

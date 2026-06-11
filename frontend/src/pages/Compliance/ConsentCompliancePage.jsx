@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRBAC } from "../../auth/RBACContext";
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -28,6 +29,10 @@ import "../../styles/consentCompliance.css";
 const COLORS = ["#0ea5e9", "#2F855A", "#5B5B5B"];
 
 const ConsentCompliancePage = () => {
+  const { hasPermission } = useRBAC();
+  const canCreate = hasPermission('consent-compliance', 'create');
+  const canUpdate = hasPermission('consent-compliance', 'update');
+  const canExport = hasPermission('consent-compliance', 'export');
   const [overview, setOverview] = useState(null);
 
   const [policies, setPolicies] = useState([]);
@@ -63,13 +68,7 @@ const ConsentCompliancePage = () => {
 
   const toastTimer = useRef(null);
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  useEffect(() => {
-    loadRecords();
-  }, [debouncedSearch, status, page, limit]);
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -113,23 +112,15 @@ const ConsentCompliancePage = () => {
     }
   }
 
-function showToast(message) {
-  setToast({
-    visible: true,
-    message,
-  });
-
+const showToast = useCallback((message) => {
+  setToast({ visible: true, message });
   clearTimeout(toastTimer.current);
-
   toastTimer.current = setTimeout(() => {
-    setToast({
-      visible: false,
-      message: "",
-    });
+    setToast({ visible: false, message: "" });
   }, 3000);
-}
+}, []);
 
-async function loadDashboard() {
+const loadDashboard = useCallback(async () => {
   try {
     setDashboardLoading(true);
 
@@ -157,9 +148,9 @@ async function loadDashboard() {
   } finally {
     setDashboardLoading(false);
   }
-}
+}, [showToast]);
 
-async function loadRecords() {
+const loadRecords = useCallback(async () => {
   try {
     setTableLoading(true);
 
@@ -180,7 +171,15 @@ async function loadRecords() {
   } finally {
     setTableLoading(false);
   }
-}
+}, [page, limit, debouncedSearch, status, showToast]);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    loadRecords();
+  }, [loadRecords]);
 
 async function handleCreateConsent(payload) {
   try {
@@ -330,7 +329,7 @@ const columns = useMemo(
 
       title: "MARKETING",
 
-      render: (row) => <ConsentStatusBadge status={row.marketing_status} onClick={() => handleInlineToggle(row, "marketing_status")} />,
+      render: (row) => <ConsentStatusBadge status={row.marketing_status} onClick={canUpdate ? () => handleInlineToggle(row, "marketing_status") : undefined} />,
     },
 
     {
@@ -338,7 +337,7 @@ const columns = useMemo(
 
       title: "ANALYTICS",
 
-      render: (row) => <ConsentStatusBadge status={row.analytics_status} onClick={() => handleInlineToggle(row, "analytics_status")} />,
+      render: (row) => <ConsentStatusBadge status={row.analytics_status} onClick={canUpdate ? () => handleInlineToggle(row, "analytics_status") : undefined} />,
     },
 
     {
@@ -347,7 +346,7 @@ const columns = useMemo(
       title: "PERSONALIZATION",
 
       render: (row) => (
-        <ConsentStatusBadge status={row.personalization_status} onClick={() => handleInlineToggle(row, "personalization_status")} />
+        <ConsentStatusBadge status={row.personalization_status} onClick={canUpdate ? () => handleInlineToggle(row, "personalization_status") : undefined} />
       ),
     },
 
@@ -364,21 +363,20 @@ const columns = useMemo(
 
       title: "ACTIONS",
 
-      render: (row) => (
+      render: (row) => canUpdate ? (
         <button
           className="cc-edit-btn"
           onClick={() => {
             setSelectedRecord(row);
-
             setShowEditModal(true);
           }}
         >
           Edit
         </button>
-      ),
+      ) : null,
     },
   ],
-  [],
+  [canUpdate, canExport],
 );
 
 return (
@@ -391,18 +389,21 @@ return (
       </div>
 
       <div className="cc-header-actions">
+        {canCreate && (
         <button
           className="cc-primary-btn"
           onClick={() => setShowAddModal(true)}
         >
           + Add Consent
         </button>
-
+        )}
+        {canExport && (
         <ExportButton
           label="Export Audit Log"
           className="cc-secondary-btn"
           onExport={handleAuditExport}
         />
+        )}
       </div>
     </div>
 
@@ -521,11 +522,13 @@ return (
             <option value="pending">Pending</option>
           </select>
 
+          {canExport && (
           <ExportButton
             label="Export"
             className="cc-secondary-btn"
             onExport={handleRecordsExport}
           />
+          )}
         </div>
       </div>
 

@@ -1,9 +1,9 @@
-//backend\src\routes\behavioralAnalyticsRoutes.js
-const express = require("express");
+const express     = require("express");
+const router      = express.Router();
+const requireAuth = require("../middlewares/requireAuth");
+const controller  = require("../controllers/behavioralAnalyticsController");
 
-const router = express.Router();
-
-const controller = require("../controllers/behavioralAnalyticsController");
+router.use(requireAuth);
 
 router.get("/overview", controller.getOverview);
 

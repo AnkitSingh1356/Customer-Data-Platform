@@ -1,8 +1,9 @@
-const express = require("express");
+const express     = require("express");
+const router      = express.Router();
+const requireAuth = require("../middlewares/requireAuth");
+const controller  = require("../controllers/promotionalEffectivenessController");
 
-const router = express.Router();
-
-const controller = require("../controllers/promotionalEffectivenessController");
+router.use(requireAuth);
 
 router.get("/overview", controller.getOverview);
 

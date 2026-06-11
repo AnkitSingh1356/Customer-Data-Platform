@@ -1,72 +1,9 @@
-// //frontend\src\services\consentComplianceService.jsx
-// const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/consent-compliance`;
-
-// async function request(endpoint = "", options = {}) {
-//   const response = await fetch(`${BASE_URL}${endpoint}`, {
-//     headers: {
-//       "Content-Type": "application/json",
-//     },
-//     ...options,
-//   });
-
-//   if (!response.ok) {
-//     const error = await response.json();
-
-//     throw new Error(error?.message || "Something went wrong");
-//   }
-
-//   const json = await response.json();
-//   return json.data;
-// }
-
-// export async function fetchConsentDashboard() {
-//   return request("/dashboard");
-// }
-
-// export async function fetchConsentRecords({
-//   page = 1,
-//   limit = 10,
-//   search = "",
-//   status = "",
-// }) {
-//   const params = new URLSearchParams({
-//     page,
-//     limit,
-//     search,
-//     status,
-//   });
-
-//   return request(`/records?${params.toString()}`);
-// }
-
-// export async function createConsentRecord(payload) {
-//   return request("/records", {
-//     method: "POST",
-//     body: JSON.stringify(payload),
-//   });
-// }
-
-// export async function updateConsentRecord(id, payload) {
-//   return request(`/records/${id}`, {
-//     method: "PUT",
-//     body: JSON.stringify(payload),
-//   });
-// }
-
-// export async function exportAuditLogs() {
-//   const response = await fetch(`${BASE_URL}/audit/export`);
-
-//   if (!response.ok) {
-//     throw new Error("Failed to export audit logs");
-//   }
-
-//   return response.blob();
-// }
+import apiFetch from "./apiFetch";
 const BASE_URL =
   `${import.meta.env.VITE_API_BASE_URL}/api/consent-compliance`;
 
 async function request(endpoint = "", options = {}) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${BASE_URL}${endpoint}`,
     {
       headers: {

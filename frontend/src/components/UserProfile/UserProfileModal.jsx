@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 
 const TABS = ["Profile", "Security"];
@@ -14,6 +14,9 @@ const [success, setSuccess] = useState("");
 const [error, setError] = useState("");
 
 const [showPwd, setShowPwd] = useState(false);
+
+const flashTimerRef = useRef(null);
+useEffect(() => () => { if (flashTimerRef.current) clearTimeout(flashTimerRef.current); }, []);
 
 const [avatarPreview, setAvatarPreview] = useState(
 user?.avatar_url || ""
@@ -39,22 +42,20 @@ setForm((f) => ({ ...f, [k]: v }));
 const setP = (k, v) =>
 setPwd((p) => ({ ...p, [k]: v }));
 
-const flash = (msg, isError = false) => {
-if (isError) {
-setError(msg);
-setSuccess("");
-} else {
-setSuccess(msg);
-setError("");
-}
-
-
-setTimeout(() => {
-  setSuccess("");
-  setError("");
-}, 4000);
-
-};
+const flash = useCallback((msg, isError = false) => {
+  if (isError) {
+    setError(msg);
+    setSuccess("");
+  } else {
+    setSuccess(msg);
+    setError("");
+  }
+  if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+  flashTimerRef.current = setTimeout(() => {
+    setSuccess("");
+    setError("");
+  }, 4000);
+}, []);
 
 const initials = useMemo(() => {
 return (

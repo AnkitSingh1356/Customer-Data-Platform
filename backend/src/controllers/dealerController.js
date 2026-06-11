@@ -71,9 +71,6 @@ async function bulkUpload(req, res) {
     }
 
     const result = await svc.bulkUpload(req.file.path);
-
-    fs.unlink(req.file.path, () => {});
-
     return res.json(result);
 
   } catch (e) {
