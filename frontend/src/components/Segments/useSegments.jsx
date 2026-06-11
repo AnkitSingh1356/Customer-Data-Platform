@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import apiFetch from "../../services/apiFetch";
 
 const BASE = `${import.meta.env.VITE_API_BASE_URL}/api/segments`;
 
@@ -17,8 +18,8 @@ export function useSegments({ search = "", status = "" } = {}) {
       if (status) params.append("status", status);
 
       const [segRes, statRes] = await Promise.all([
-        fetch(`${BASE}?${params}`),
-        fetch(`${BASE}/stats`),
+        apiFetch(`${BASE}?${params}`),
+        apiFetch(`${BASE}/stats`),
       ]);
       if (!segRes.ok || !statRes.ok) throw new Error("API unavailable");
       const [segs, st] = await Promise.all([segRes.json(), statRes.json()]);
@@ -34,7 +35,7 @@ export function useSegments({ search = "", status = "" } = {}) {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const createSegment = async (payload) => {
-    const res  = await fetch(BASE, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const res  = await apiFetch(BASE, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Create failed");
     await fetchAll();
@@ -42,7 +43,7 @@ export function useSegments({ search = "", status = "" } = {}) {
   };
 
   const updateSegment = async (id, payload) => {
-    const res  = await fetch(`${BASE}/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const res  = await apiFetch(`${BASE}/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Update failed");
     await fetchAll();
@@ -50,7 +51,7 @@ export function useSegments({ search = "", status = "" } = {}) {
   };
 
   const deleteSegment = async (id) => {
-    const res = await fetch(`${BASE}/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`${BASE}/${id}`, { method: "DELETE" });
     if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Delete failed"); }
     await fetchAll();
   };

@@ -8,7 +8,7 @@ import DealerRow from "../../components/DealerNetwork/DealerRow";
 import DealerDetailModal from "../../components/DealerNetwork/DealerDetailModal";
 
 import BulkUploadModal from "../../components/BulkUpload/BulkUploadModal";
-
+import { useRBAC } from "../../auth/RBACContext";
 import { BULK_UPLOAD_CONFIG } from "../../config/bulkUploadConfig";
 
 import {
@@ -28,6 +28,7 @@ const KpiCard = ({ icon, label, value }) => (
 );
 
 const DealerNetworkPage = () => {
+  const { hasPermission } = useRBAC();
   const [search, setSearch] = useState("");
 
   const [liveSearch, setLiveSearch] = useState("");
@@ -97,6 +98,7 @@ const DealerNetworkPage = () => {
           </p>
         </div>
 
+        {hasPermission('dealer-network', 'import') && (
         <button
           className="btn-bulk-upload"
           onClick={() =>
@@ -127,6 +129,7 @@ const DealerNetworkPage = () => {
 
           Bulk Upload
         </button>
+        )}
 
       </div>
 

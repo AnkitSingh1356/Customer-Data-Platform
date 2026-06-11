@@ -28,6 +28,9 @@ input, select { font-family: inherit; }
   border: none; background: none; font-size: 13px; font-weight: 600;
   color: #1a1f2e; cursor: pointer; appearance: none; outline: none; letter-spacing: 0.03em;
 }
+.persona-dropdown--readonly {
+  cursor: default; pointer-events: none; color: #4b5563;
+}
 .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .topbar-icon-btn {
   background: none; border: none; color: #666; display: flex; align-items: center;

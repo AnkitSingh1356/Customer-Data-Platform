@@ -1,19 +1,27 @@
 import { useState } from "react";
 import { useAuth }  from "../../auth/AuthContext";
 
-const ROLES = [
-  { value: "admin",      label: "Admin" },
-  { value: "marketing",  label: "Marketing" },
-  { value: "compliance", label: "Compliance" },
+const CUSTOMER_TYPES = [
+  { value: "Dealer",       label: "Dealer" },
+  { value: "B2B Customer", label: "B2B Customer" },
+  { value: "B2C Customer", label: "B2C Customer" },
+  { value: "Employee",     label: "Employee" },
 ];
 
 const SignupPage = ({ onSwitchToLogin }) => {
   const { register, loading } = useAuth();
-  const [form,  setForm]  = useState({ full_name: "", email: "", password: "", confirm: "", role: "admin", department: "" });
+  const [form,  setForm]  = useState({
+    full_name: "", email: "", password: "", confirm: "",
+    account_type: "customer",      
+    customer_type: "Dealer",        
+    department: "",
+  });
   const [error, setError] = useState("");
   const [showPwd, setShowPwd] = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const isCustomer = form.account_type === "customer";
 
   const validate = () => {
     if (!form.full_name.trim()) return "Full name is required.";
@@ -31,11 +39,12 @@ const SignupPage = ({ onSwitchToLogin }) => {
     setError("");
     try {
       await register({
-        full_name:  form.full_name.trim(),
-        email:      form.email.trim(),
-        password:   form.password,
-        role:       form.role,
-        department: form.department.trim() || undefined,
+        full_name:     form.full_name.trim(),
+        email:         form.email.trim(),
+        password:      form.password,
+        role:          isCustomer ? "customer" : "admin",
+        customer_type: isCustomer ? form.customer_type : "Employee",
+        department:    form.department.trim() || undefined,
       });
     } catch (e) {
       setError(e.message);
@@ -85,11 +94,33 @@ const SignupPage = ({ onSwitchToLogin }) => {
               value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" />
           </div>
 
-          <div className="auth-field">
-            <label className="auth-label">Role *</label>
-            <select className="auth-input auth-select" value={form.role} onChange={(e) => set("role", e.target.value)}>
-              {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </select>
+          <div className="auth-field-row">
+            <div className="auth-field">
+              <label className="auth-label">Account Type *</label>
+              <select
+                className="auth-input auth-select"
+                value={form.account_type}
+                onChange={(e) => set("account_type", e.target.value)}
+              >
+                <option value="admin">Admin</option>
+                <option value="customer">Customer</option>
+              </select>
+            </div>
+
+            {isCustomer && (
+              <div className="auth-field">
+                <label className="auth-label">Customer Type *</label>
+                <select
+                  className="auth-input auth-select"
+                  value={form.customer_type}
+                  onChange={(e) => set("customer_type", e.target.value)}
+                >
+                  {CUSTOMER_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="auth-field-row">

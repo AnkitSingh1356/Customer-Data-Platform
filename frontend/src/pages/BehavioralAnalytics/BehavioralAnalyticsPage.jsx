@@ -1,5 +1,4 @@
-//frontend\src\pages\BehavioralAnalytics\BehavioralAnalyticsPage.jsx
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -29,12 +28,14 @@ import {
 import KpiCard from "../../components/common/KpiCard";
 import DataTable from "../../components/common/DataTable";
 import Pagination from "../../components/common/Pagination";
+import { useRBAC } from "../../auth/RBACContext";
 
 import "../../styles/behavioralAnalytics.css";
 
 const COLORS = ["#0EA5E9", "#14B8A6", "#22C55E", "#F97316"];
 
 function BehavioralAnalyticsPage() {
+  const { hasPermission } = useRBAC();
   const [range, setRange] = useState("30d");
 
   const [overview, setOverview] = useState(null);
@@ -74,15 +75,7 @@ function BehavioralAnalyticsPage() {
     setPage(1);
   }, [range]);
 
-  useEffect(() => {
-    loadDashboard();
-  }, [range]);
-
-  useEffect(() => {
-    loadActivities();
-  }, [debouncedSearch, page, limit, range]);
-
-  async function loadDashboard() {
+  const loadDashboard = useCallback(async () => {
     try {
       setError("");
 
@@ -171,9 +164,9 @@ function BehavioralAnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [range]);
 
-  async function loadActivities() {
+  const loadActivities = useCallback(async () => {
     try {
       const data = await fetchActivities({
         search: debouncedSearch,
@@ -188,7 +181,16 @@ function BehavioralAnalyticsPage() {
     } catch (err) {
       console.error(err);
     }
-  }
+  }, [debouncedSearch, page, limit, range]);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    loadActivities();
+  }, [loadActivities]);
+
   async function handleExport() {
     try {
       const data = await exportAnalytics(range);
@@ -313,9 +315,11 @@ function BehavioralAnalyticsPage() {
             <option value="90d">Last 90 Days</option>
           </select>
 
+          {hasPermission('behavioral-analytics', 'export') && (
           <button className="ba-export-btn" onClick={handleExport}>
             Export Report
           </button>
+          )}
         </div>
       </div>
       <div className="ba-kpi-grid">
@@ -647,4 +651,3 @@ function BehavioralAnalyticsPage() {
 }
 
 export default memo(BehavioralAnalyticsPage);
-memo(BehavioralAnalyticsPage);

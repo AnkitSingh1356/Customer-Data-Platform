@@ -1,9 +1,9 @@
-//frontend\src\services\behavioralAnalyticsService.jsx
+import apiFetch from "./apiFetch";
 const BASE =
   `${import.meta.env.VITE_API_BASE_URL}/api/behavioral-analytics`
 
 export async function fetchOverview(range = "30d") {
-  const res = await fetch(
+  const res = await apiFetch(
     `${BASE}/overview?range=${range}`
   );
 
@@ -15,7 +15,7 @@ export async function fetchOverview(range = "30d") {
 }
 
 export async function fetchEngagement(range = "30d") {
-  const res = await fetch(
+  const res = await apiFetch(
     `${BASE}/engagement?range=${range}`
   );
 
@@ -27,7 +27,7 @@ export async function fetchEngagement(range = "30d") {
 }
 
 export async function fetchTopPages(range = "30d") {
-  const res = await fetch(
+  const res = await apiFetch(
     `${BASE}/top-pages?range=${range}`
   );
 
@@ -39,7 +39,7 @@ export async function fetchTopPages(range = "30d") {
 }
 
 export async function fetchTrafficSources(range = "30d") {
-  const res = await fetch(
+  const res = await apiFetch(
     `${BASE}/traffic-sources?range=${range}`
   );
 
@@ -63,7 +63,7 @@ export async function fetchActivities({
     range,
   });
 
-  const res = await fetch(
+  const res = await apiFetch(
     `${BASE}/activities?${params.toString()}`
   );
 
@@ -75,7 +75,7 @@ export async function fetchActivities({
 }
 
 export async function exportAnalytics(range = "30d") {
-  const res = await fetch(
+  const res = await apiFetch(
     `${BASE}/export?range=${range}`
   );
 

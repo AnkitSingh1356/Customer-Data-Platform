@@ -129,83 +129,94 @@ async function createAccessRequest(code, targetUuid) {
   return res.rows[0];
 }
 
+const DEALER_FORMULA_RE = /^[=+\-@\t\r]/;
+function sanitizeDealerCell(v) {
+  return typeof v === "string" && DEALER_FORMULA_RE.test(v) ? "'" + v : v;
+}
+
+const MAX_DEALER_ROWS = parseInt(process.env.MAX_ROWS_PER_UPLOAD || "10000");
+
 async function bulkUpload(filePath) {
   const rows = [];
+  const parseErrors = [];
 
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
+    let rowNum = 0;
+    let stream = null;
 
-    fs.createReadStream(filePath)
-      .pipe(csv())
-      .on("data", (row) => {
+    stream = fs.createReadStream(filePath)
+      .pipe(csv({ mapHeaders: ({ header }) => header.trim().toLowerCase() }))
+      .on("data", (raw) => {
+        rowNum++;
+        if (rowNum > MAX_DEALER_ROWS) {
+          if (rowNum === MAX_DEALER_ROWS + 1) {
+            parseErrors.push(`Exceeded max ${MAX_DEALER_ROWS} rows — remaining rows ignored.`);
+            stream.destroy();
+          }
+          return;
+        }
+
+        if (!raw.name?.trim() || !raw.code?.trim()) {
+          parseErrors.push(`Row ${rowNum}: Missing required field (name or code) — row skipped.`);
+          return;
+        }
+
+        const row = {};
+        for (const [k, v] of Object.entries(raw)) {
+          row[k] = sanitizeDealerCell((v || "").trim());
+        }
+        row._rowNum = rowNum;
         rows.push(row);
       })
-
-      .on("end", async () => {
-        try {
-
-          let inserted = 0;
-          let failed = 0;
-
-          for (const row of rows) {
-
-            try {
-
-              await pool.query(
-                `
-                INSERT INTO dealers (
-                  name,
-                  code,
-                  parent_code,
-                  type,
-                  tier,
-                  region,
-                  city,
-                  country,
-                  email,
-                  phone,
-                  status
-                )
-                VALUES (
-                  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11
-                )
-                ON CONFLICT (code)
-                DO NOTHING
-                `,
-                [
-                  row.name,
-                  row.code,
-                  row.parent_code || null,
-                  row.type || "Branch",
-                  row.tier || "standard",
-                  row.region,
-                  row.city || null,
-                  row.country || null,
-                  row.email || null,
-                  row.phone || null,
-                  row.status || "Active",
-                ]
-              );
-
-              inserted++;
-
-            } catch {
-              failed++;
-            }
-          }
-
-          resolve({
-            total: rows.length,
-            inserted,
-            failed,
-          });
-
-        } catch (e) {
-          reject(e);
-        }
-      })
-
-      .on("error", reject);
+      .on("end",   resolve)
+      .on("close", resolve)
+      .on("error", (e) => { stream.destroy(); reject(e); });
   });
+
+  let inserted = 0;
+  let failed   = parseErrors.length;
+
+  for (const row of rows) {
+    try {
+      await pool.query(
+        `INSERT INTO dealers
+           (name, code, parent_code, type, tier, region, city, country, email, phone, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         ON CONFLICT (code) DO UPDATE SET
+           name        = EXCLUDED.name,
+           parent_code = COALESCE(EXCLUDED.parent_code, dealers.parent_code),
+           type        = COALESCE(EXCLUDED.type,        dealers.type),
+           tier        = COALESCE(EXCLUDED.tier,        dealers.tier),
+           region      = COALESCE(EXCLUDED.region,      dealers.region),
+           city        = COALESCE(EXCLUDED.city,        dealers.city),
+           country     = COALESCE(EXCLUDED.country,     dealers.country),
+           email       = COALESCE(EXCLUDED.email,       dealers.email),
+           phone       = COALESCE(EXCLUDED.phone,       dealers.phone),
+           status      = COALESCE(EXCLUDED.status,      dealers.status),
+           updated_at  = NOW()`,
+        [
+          row.name, row.code, row.parent_code || null,
+          row.type || "Branch", (row.tier || "standard").toLowerCase(),
+          row.region || null, row.city || null, row.country || null,
+          row.email || null, row.phone || null, row.status || "Active",
+        ]
+      );
+      inserted++;
+    } catch (e) {
+      failed++;
+      console.error(`[DealerBulkUpload] row ${row._rowNum} failed: ${e.message}`);
+      parseErrors.push(`Row ${row._rowNum}: Insert failed — ${e.code === "23505" ? "duplicate code" : "database error"}.`);
+    }
+  }
+
+  try { fs.unlinkSync(filePath); } catch (_) {}
+
+  return {
+    total:    rows.length + parseErrors.filter(e => e.includes("Missing required")).length,
+    inserted,
+    failed,
+    errors:   parseErrors.slice(0, 200),
+  };
 }
 
 module.exports = {

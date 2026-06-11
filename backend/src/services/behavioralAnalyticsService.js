@@ -1,4 +1,3 @@
-//backend\src\services\behavioralAnalyticsService.js
 const pool = require("../config/db");
 
 function getDateFilter(range = "30d") {
@@ -64,27 +63,20 @@ async function getOverview({ range = "30d" }) {
 }
 
 async function getEngagement({ range = "30d" }) {
-  const now = new Date();
+  const days = getDateFilter(range);
 
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const result = await pool.query(
+    `SELECT
+       DATE_TRUNC('day', created_at)::date AS label,
+       COUNT(DISTINCT session_id)::int      AS sessions
+     FROM behavioral_events
+     WHERE created_at >= NOW() - ($1 * INTERVAL '1 day')
+     GROUP BY 1
+     ORDER BY 1`,
+    [days]
+  );
 
-  const daysInMonth = new Date(
-    currentYear,
-    currentMonth + 1,
-    0
-  ).getDate();
-
-  const engagement = [];
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    engagement.push({
-      label: `${day}`,
-      sessions: Math.floor(Math.random() * 18) + 10,
-    });
-  }
-
-  return engagement;
+  return result.rows;
 }
 /* =========================================================
    TOP PAGES
@@ -152,8 +144,11 @@ async function getActivities({
   range = "30d",
 }) {
   const days = getDateFilter(range);
-
-  const offset = (page - 1) * limit;
+  const safeLimit  = Math.min(Math.max(Number(limit) || 10, 1), 500);
+  const safePage   = Math.max(Number(page) || 1, 1);
+  const offset = (safePage - 1) * safeLimit;
+  limit = safeLimit;
+  page  = safePage;
 
   const rowsQuery = `
     SELECT
@@ -251,15 +246,12 @@ async function exportAnalytics({
   const days = getDateFilter(range);
 
   const result = await pool.query(
-    `
-    SELECT *
-    FROM behavioral_events
-
-    WHERE
-      created_at >= NOW() - ($1 || ' days')::INTERVAL
-
-    ORDER BY created_at DESC
-    `,
+    `SELECT id, session_id, user_name, event_type, page_url, device_type,
+            city, country, traffic_source, converted, session_duration, created_at
+     FROM behavioral_events
+     WHERE created_at >= NOW() - ($1 * INTERVAL '1 day')
+     ORDER BY created_at DESC
+     LIMIT 50000`,
     [days]
   );
 

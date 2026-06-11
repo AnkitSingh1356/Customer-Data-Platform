@@ -1,4 +1,3 @@
-//backend\src\services\consentComplianceService.js
 const pool = require("../config/db");
 
 const getDashboardOverview = async () => {
@@ -134,7 +133,7 @@ const getConsentRecords = async ({
     `;
   }
 
-  if (status !== "all") {
+  if (status && status !== "all") {
     values.push(status);
 
     whereClause += `
@@ -196,9 +195,10 @@ const getConsentRecords = async ({
   };
 };
 
-const createConsentRecord = async (
-  payload
-) => {
+const VALID_STATUSES = ["granted", "revoked", "pending"];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const createConsentRecord = async (payload) => {
   const {
     customer_name,
     customer_email,
@@ -210,133 +210,99 @@ const createConsentRecord = async (
     performed_by,
   } = payload;
 
-  const query = `
-    INSERT INTO consent_records
-    (
-      customer_name,
-      customer_email,
-      marketing_status,
-      analytics_status,
-      personalization_status,
-      source_system,
-      consent_version
-    )
-    VALUES
-    ($1,$2,$3,$4,$5,$6,$7)
-    RETURNING *
-  `;
-
-  const values = [
-    customer_name,
-    customer_email,
-    marketing_status,
-    analytics_status,
-    personalization_status,
-    source_system,
-    consent_version,
-  ];
-
-  const result =
-    await pool.query(query, values);
-
-  const createdRecord =
-    result.rows[0];
-
-  await pool.query(
-    `
-      INSERT INTO consent_audit_logs
-      (
-        consent_record_id,
-        action_type,
-        new_value,
-        performed_by
-      )
-      VALUES
-      ($1,$2,$3,$4)
-    `,
-    [
-      createdRecord.id,
-      "CREATE_CONSENT",
-      JSON.stringify(createdRecord),
-      performed_by || "System",
-    ]
-  );
-
-  return createdRecord;
-};
-
-const updateConsentRecord = async (
-  id,
-  payload
-) => {
-  const existingQuery = `
-    SELECT *
-    FROM consent_records
-    WHERE id = $1
-  `;
-
-  const existing =
-    await pool.query(existingQuery, [id]);
-
-  if (!existing.rows.length) {
-    throw new Error(
-      "Consent record not found"
-    );
+  if (!customer_name?.trim() || !customer_email?.trim()) {
+    throw Object.assign(new Error("customer_name and customer_email are required."), { status: 400 });
+  }
+  if (!EMAIL_RE.test(customer_email.trim())) {
+    throw Object.assign(new Error("Invalid customer_email format."), { status: 400 });
+  }
+  if (![marketing_status, analytics_status, personalization_status].every(s => VALID_STATUSES.includes(s))) {
+    throw Object.assign(new Error(`Status values must be one of: ${VALID_STATUSES.join(", ")}.`), { status: 400 });
   }
 
-  const previous =
-    existing.rows[0];
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
 
-  const query = `
-    UPDATE consent_records
-    SET
-      marketing_status = $1,
-      analytics_status = $2,
-      personalization_status = $3,
-      last_updated = NOW()
-    WHERE id = $4
-    RETURNING *
-  `;
+    const result = await client.query(
+      `INSERT INTO consent_records
+       (customer_name, customer_email, marketing_status, analytics_status,
+        personalization_status, source_system, consent_version)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       RETURNING *`,
+      [customer_name.trim(), customer_email.trim(), marketing_status,
+       analytics_status, personalization_status, source_system, consent_version]
+    );
+    const createdRecord = result.rows[0];
 
-  const values = [
-    payload.marketing_status,
-    payload.analytics_status,
-    payload.personalization_status,
-    id,
-  ];
+    await client.query(
+      `INSERT INTO consent_audit_logs
+       (consent_record_id, action_type, new_value, performed_by)
+       VALUES ($1,$2,$3,$4)`,
+      [createdRecord.id, "CREATE_CONSENT", JSON.stringify(createdRecord), performed_by || "System"]
+    );
 
-  const result =
-    await pool.query(query, values);
-
-  const updated =
-    result.rows[0];
-
-  await pool.query(
-    `
-      INSERT INTO consent_audit_logs
-      (
-        consent_record_id,
-        action_type,
-        previous_value,
-        new_value,
-        performed_by
-      )
-      VALUES
-      ($1,$2,$3,$4,$5)
-    `,
-    [
-      id,
-      "UPDATE_CONSENT",
-      JSON.stringify(previous),
-      JSON.stringify(updated),
-      payload.performed_by || "System",
-    ]
-  );
-
-  return updated;
+    await client.query("COMMIT");
+    return createdRecord;
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
 };
 
-const exportAuditLogs = async () => {
+const updateConsentRecord = async (id, payload) => {
+  if (![payload.marketing_status, payload.analytics_status, payload.personalization_status].every(s => VALID_STATUSES.includes(s))) {
+    throw Object.assign(new Error(`Status values must be one of: ${VALID_STATUSES.join(", ")}.`), { status: 400 });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      `WITH old AS (
+         SELECT marketing_status, analytics_status, personalization_status
+         FROM consent_records WHERE id = $4
+       )
+       UPDATE consent_records
+       SET marketing_status = $1,
+           analytics_status = $2,
+           personalization_status = $3,
+           last_updated = NOW()
+       WHERE id = $4
+       RETURNING *, (SELECT row_to_json(old) FROM old) AS previous_data`,
+      [payload.marketing_status, payload.analytics_status, payload.personalization_status, id]
+    );
+
+    if (!result.rows.length) {
+      throw Object.assign(new Error("Consent record not found"), { status: 404 });
+    }
+
+    const updated = result.rows[0];
+    const previous = updated.previous_data;
+
+    await client.query(
+      `INSERT INTO consent_audit_logs
+       (consent_record_id, action_type, previous_value, new_value, performed_by)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [id, "UPDATE_CONSENT", JSON.stringify(previous), JSON.stringify(updated), payload.performed_by || "System"]
+    );
+
+    await client.query("COMMIT");
+    delete updated.previous_data;
+    return updated;
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
+};
+
+const exportAuditLogs = async ({ limit = 10000 } = {}) => {
+  const safeLimit = Math.min(Number(limit) || 10000, 50000);
   const query = `
     SELECT
       l.id,
@@ -348,28 +314,27 @@ const exportAuditLogs = async () => {
     INNER JOIN consent_records r
       ON r.id = l.consent_record_id
     ORDER BY l.created_at DESC
+    LIMIT $1
   `;
-
-  const result =
-    await pool.query(query);
-
+  const result = await pool.query(query, [safeLimit]);
   return result.rows;
 };
-const getAllConsentRecords = async () => {
+
+const getAllConsentRecords = async ({ limit = 10000 } = {}) => {
+  const safeLimit = Math.min(Number(limit) || 10000, 50000);
   const query = `
-      SELECT
-        customer_name,
-        customer_email,
-        marketing_status,
-        analytics_status,
-        personalization_status,
-        last_updated
-      FROM consent_records
-      ORDER BY last_updated DESC
-    `;
-
-  const { rows } = await pool.query(query);
-
+    SELECT
+      customer_name,
+      customer_email,
+      marketing_status,
+      analytics_status,
+      personalization_status,
+      last_updated
+    FROM consent_records
+    ORDER BY last_updated DESC
+    LIMIT $1
+  `;
+  const { rows } = await pool.query(query, [safeLimit]);
   return rows;
 };
 

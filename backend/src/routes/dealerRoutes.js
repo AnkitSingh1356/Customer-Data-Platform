@@ -1,9 +1,10 @@
-//cdp-backend\src\routes\dealerRoutes.js
-const express = require("express");
-const router  = express.Router();
-const ctrl    = require("../controllers/dealerController");
-const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
+const express     = require("express");
+const router      = express.Router();
+const requireAuth = require("../middlewares/requireAuth");
+const ctrl        = require("../controllers/dealerController");
+const upload      = require("../middlewares/upload");
+
+router.use(requireAuth);
 
 router.get("/stats",            ctrl.stats);router.get("/template", ctrl.template);
 router.post("/bulk-upload", upload.single("file"), ctrl.bulkUpload);

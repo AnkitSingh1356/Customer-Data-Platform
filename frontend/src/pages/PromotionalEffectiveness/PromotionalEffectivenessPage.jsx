@@ -3,6 +3,7 @@ import {
     useMemo,
     useState,
   } from "react";
+  import { useDebounce } from "../../hooks/useDebounce";
   
   import {
     ResponsiveContainer,
@@ -33,9 +34,10 @@ import {
   import KpiCard from "../../components/common/KpiCard";
   
   import ExportButton from "../../components/common/ExportButton";
+  import { useRBAC } from "../../auth/RBACContext";
   
-  import CampaignDetailsModal from "../../components/PromotionalEffectiveness/CampaignDetailsModal";
-  
+import CampaignDetailsModal from "../../components/PromotionalEffectiveness/CampaignDetailsModal";
+
   import "../../styles/promotionalEffectiveness.css";
   
   const COLORS = [
@@ -46,6 +48,7 @@ import {
   ];
   
   function PromotionalEffectivenessPage() {
+    const { hasPermission } = useRBAC();
     const [overview, setOverview] =
       useState({});
   
@@ -60,22 +63,19 @@ import {
   
     const [search, setSearch] =
       useState("");
-  
+    const debouncedSearch = useDebounce(search);
     const [status, setStatus] =
       useState("all");
-  
     const [
       selectedCampaign,
       setSelectedCampaign,
     ] = useState(null);
-  
     useEffect(() => {
       loadDashboard();
     }, []);
-  
     useEffect(() => {
       loadCampaigns();
-    }, [search, status]);
+    }, [debouncedSearch, status]);
   
     async function loadDashboard() {
       try {
@@ -105,7 +105,7 @@ import {
       try {
         const data =
           await fetchCampaigns({
-            search,
+            search: debouncedSearch,
             status,
           });
   
@@ -305,11 +305,13 @@ import {
             </p>
           </div>
   
+          {hasPermission('promotional', 'export') && (
           <ExportButton
             label="Export"
             onExport={handleExport}
             className="promo-export-btn"
           />
+          )}
         </div>
   
         <div className="promo-kpi-grid">

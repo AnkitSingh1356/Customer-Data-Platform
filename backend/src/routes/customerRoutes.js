@@ -1,6 +1,6 @@
-//cdp-bulk-upload\cdp-backend\src\routes\customerRoutes.js
 const express = require("express");
 const router = express.Router();
+const requireAuth = require("../middlewares/requireAuth");
 const upload = require("../middlewares/upload");
 const {
   startBulkUpload,
@@ -15,6 +15,8 @@ const {
   fetchProfile,
   createAttribute,
 } = require("../controllers/profileController");
+
+router.use(requireAuth);
 
 router.get("/", listCustomers);
 router.get("/stats", getCustomerStats);

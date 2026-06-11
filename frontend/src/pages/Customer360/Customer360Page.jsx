@@ -5,6 +5,9 @@ import CustomerProfileModal from "../../components/CustomerProfile/index.jsx";
 import Pagination from "../../components/common/Pagination";
 import DataTable from "../../components/common/DataTable";
 import { BULK_UPLOAD_CONFIG } from "../../config/bulkUploadConfig";
+import apiFetch from "../../services/apiFetch";
+import { useAuth } from "../../auth/AuthContext";
+import { useRBAC } from "../../auth/RBACContext";
 
 
 const API = `${import.meta.env.VITE_API_BASE_URL}/api/customers`;
@@ -26,6 +29,8 @@ const INITIAL_STATS = {
 };
 
 const Customer360Page = () => {
+  const { user } = useAuth();
+  const { hasPermission } = useRBAC();
   const [showUploadModal,  setShowUploadModal]  = useState(false);
   const [selectedCdpId,    setSelectedCdpId]    = useState(null);
   const [customers,        setCustomers]        = useState([]);
@@ -75,8 +80,8 @@ const Customer360Page = () => {
       if (filters.source !== "all") params.append("source", filters.source);
 
       const [custRes, statsRes] = await Promise.all([
-        fetch(`${API}?${params.toString()}`,  { signal: controller.signal }),
-        fetch(`${API}/stats`,                  { signal: controller.signal }),
+        apiFetch(`${API}?${params.toString()}`, { signal: controller.signal }),
+        apiFetch(`${API}/stats`,               { signal: controller.signal }),
       ]);
       if (!custRes.ok || !statsRes.ok) throw new Error("API unavailable");
 
@@ -177,7 +182,7 @@ const Customer360Page = () => {
             Discovery &amp; Navigation
           </p>
         </div>
-        <button
+        {hasPermission('customer360', 'import') && <button
           className="btn-bulk-upload"
           onClick={() => setShowUploadModal(true)}
         >
@@ -196,7 +201,7 @@ const Customer360Page = () => {
             <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
           </svg>
           Bulk Upload
-        </button>
+        </button>}
       </div>
 
       <div className="c360-stats">
@@ -346,7 +351,9 @@ const Customer360Page = () => {
           Showing {customers.length} of {total} unified customer profiles
         </span>
         <div className="c360-table-actions">
+          {hasPermission('customer360', 'export') && (
           <button className="btn-table-action">Export List</button>
+          )}
           <button className="btn-table-action">Manage Columns</button>
         </div>
       </div>

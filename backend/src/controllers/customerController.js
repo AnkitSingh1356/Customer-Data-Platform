@@ -8,8 +8,10 @@ async function listCustomers(req, res) {
       status,
       source,
       search,
-      page:  parseInt(page  || "1",  10),
-      limit: parseInt(limit || "20", 10),
+      page:               parseInt(page  || "1",  10),
+      limit:              parseInt(limit || "20", 10),
+      viewerRole:         req.user.role,
+      viewerCustomerType: req.user.customer_type,
     });
     return res.json(result);
   } catch (err) {
@@ -20,7 +22,10 @@ async function listCustomers(req, res) {
 
 async function getCustomerStats(req, res) {
   try {
-    const stats = await getStats();
+    const stats = await getStats({
+      viewerRole:         req.user.role,
+      viewerCustomerType: req.user.customer_type,
+    });
     return res.json(stats);
   } catch (err) {
     console.error("[Customers] getCustomerStats error:", err.message);

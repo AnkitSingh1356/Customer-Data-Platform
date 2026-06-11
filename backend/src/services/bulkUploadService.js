@@ -82,15 +82,21 @@ async function processUpload(jobId, filePath, filename) {
 }
 
 
+function friendlyDbError(e) {
+  if (e.code === "23505") return "Duplicate record — row already exists.";
+  if (e.code === "23502") return "Missing required field.";
+  if (e.code === "23503") return "Referenced record does not exist.";
+  return "Database error — row could not be inserted.";
+}
+
 async function upsertChunk(jobId, rows, errorLog) {
   const client = await pool.connect();
   try {
-    await client.query("BEGIN");
 
     for (const row of rows) {
       try {
+        await client.query("SAVEPOINT row_save");
         const cdpId = generateCdpId();
-        const name  = [row.first_name, row.last_name].filter(Boolean).join(" ");
 
         await client.query(
           `INSERT INTO customers
@@ -119,27 +125,21 @@ async function upsertChunk(jobId, rows, errorLog) {
           ]
         );
 
-        await client.query(
-          `INSERT INTO upload_errors (job_id, row_number, row_data, error_msg)
-           VALUES ($1, $2, $3, 'OK') ON CONFLICT DO NOTHING`,
-          [jobId, row._rowNum, JSON.stringify(row)]
-        ).catch(() => {}); 
+        await client.query("RELEASE SAVEPOINT row_save");
 
       } catch (rowErr) {
-        const msg = `Row ${row._rowNum}: DB error — ${rowErr.message}`;
-        errorLog.push(msg);
-        await client.query(
+        await client.query("ROLLBACK TO SAVEPOINT row_save");
+        console.error(`[upsertChunk] row ${row._rowNum}:`, rowErr.message);
+        const safeMsg = `Row ${row._rowNum}: ${friendlyDbError(rowErr)}`;
+        errorLog.push(safeMsg);
+
+        await pool.query(
           `INSERT INTO upload_errors (job_id, row_number, row_data, error_msg)
-           VALUES ($1, $2, $3, $4)`,
-          [jobId, row._rowNum, JSON.stringify(row), rowErr.message]
+           VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+          [jobId, row._rowNum, JSON.stringify(row), friendlyDbError(rowErr)]
         ).catch(() => {});
       }
     }
-
-    await client.query("COMMIT");
-  } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
   } finally {
     client.release();
   }

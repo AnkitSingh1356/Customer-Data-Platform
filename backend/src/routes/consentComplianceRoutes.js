@@ -1,9 +1,9 @@
-//backend\src\routes\consentComplianceRoutes.js
-const express = require("express");
+const express     = require("express");
+const router      = express.Router();
+const requireAuth = require("../middlewares/requireAuth");
+const controller  = require("../controllers/consentComplianceController");
 
-const router = express.Router();
-
-const controller = require("../controllers/consentComplianceController");
+router.use(requireAuth);
 
 router.get("/dashboard", controller.getDashboardOverview);
 

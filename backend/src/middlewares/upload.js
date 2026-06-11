@@ -1,25 +1,29 @@
-//cdp-bulk-upload\cdp-backend\src\middlewares\upload.js
 const multer = require("multer");
 const path   = require("path");
 const fs     = require("fs");
 
 const UPLOAD_DIR = path.join(__dirname, "../../uploads");
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+try {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+} catch (err) {
+  console.error("[upload] Failed to create upload directory:", err.message);
+  process.exit(1);
+}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
   filename:    (_req, file, cb) => {
     const ts   = Date.now();
-    const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const safe = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, "_");
     cb(null, `${ts}_${safe}`);
   },
 });
+const ALLOWED_MIME = new Set(["text/csv", "application/csv"]);
 
 const fileFilter = (_req, file, cb) => {
-  const allowed = [".csv", "text/csv", "application/csv",
-                   "application/vnd.ms-excel", "text/plain"];
   const ext = path.extname(file.originalname).toLowerCase();
-  if (ext === ".csv" || allowed.includes(file.mimetype)) {
+  if (ext === ".csv" && ALLOWED_MIME.has(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error("Only CSV files are accepted."), false);
