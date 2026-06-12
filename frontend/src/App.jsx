@@ -15,6 +15,7 @@ import ConsentCompliancePage from "./pages/Compliance/ConsentCompliancePage";
 import PromotionalEffectivenessPage from "./pages/PromotionalEffectiveness/PromotionalEffectivenessPage";
 import IdentityResolution from "./pages/IdentityResolution/IdentityResolutionPage";
 import AccessManagementPage from "./pages/AccessManagement/index";
+import ReleaseNotesPage from "./pages/ReleaseNotes/ReleaseNotesPage";
 import "./styles/access-management.css";
 
 const CUSTOMER_TYPE_PORTALS = {
@@ -93,6 +94,7 @@ function AppShell() {
       if (!isAdmin) return ACCESS_DENIED;
       return <AccessManagementPage />;
     }
+    if (activeNav === "release-notes")  return gate("release-notes", <ReleaseNotesPage />);
     return (
       <div className="app-placeholder-page">
         <p className="app-placeholder">{activeNav} — coming soon</p>
