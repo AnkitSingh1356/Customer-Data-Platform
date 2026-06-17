@@ -2,6 +2,7 @@ const service = require(
   "../services/identityResolutionService",
 );
 
+// Returns identity resolution KPIs: match rate, merge count, unresolved duplicates
 const getDashboard =
   async (req, res) => {
     try {
@@ -26,6 +27,7 @@ const getDashboard =
     }
   };
 
+// Returns paginated candidate duplicate pairs identified by the matching engine
 const getMatches =
   async (req, res) => {
     try {
@@ -60,6 +62,7 @@ const getMatches =
     }
   };
 
+// Retrieves all identity matching rules (e.g., email exact-match, phone fuzzy-match)
 const getRules =
   async (req, res) => {
     try {
@@ -84,6 +87,7 @@ const getRules =
     }
   };
 
+// Enables or disables a single matching rule without deleting its configuration
 const toggleRule =
   async (req, res) => {
     try {
@@ -110,6 +114,7 @@ const toggleRule =
     }
   };
 
+// Merges two or more duplicate customer profiles into a single canonical record
 const mergeProfiles =
   async (req, res) => {
     try {

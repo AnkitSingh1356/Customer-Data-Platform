@@ -63,7 +63,7 @@
   }
 
   .rule-toggle.active {
-    background: rgb(14, 165, 233);
+    background: var(--sky-color);
   }
 
   .rule-toggle.active::after {
@@ -80,7 +80,7 @@
   
   .stats-fill {
     height: 100%;
-    background: rgb(14, 165, 233);
+    background: var(--sky-color);
     border-radius: 10px;
   }
   
@@ -113,15 +113,15 @@
       0.1
     );
   
-    color: rgb(14, 165, 233);
-  
+    color: var(--sky-color);
+
     padding: 4px 10px;
-  
+
     border-radius: 6px;
   }
-  
+
   .merge-btn {
-    background: rgb(14, 165, 233);
+    background: var(--sky-color);
     color: white;
     border: none;
     padding: 8px 14px;
@@ -198,3 +198,14 @@
     background: #1f2937;
     border-radius: 4px;
   }
+
+.ir-merge-table-wrap { margin-top: 24px; }
+.ir-merge-col-check { width: 40px; }
+.ir-merge-cell-meta { margin: 0; font-size: 13px; color: #6b7280; }
+.ir-confidence-bar-fill { /* width set inline as it is dynamic */ }
+.ir-merge-nowrap { white-space: nowrap; color: #6b7280; font-size: 13px; }
+.ir-merge-empty { color: #9ca3af; font-size: 13px; }
+.ir-stats-section { margin-bottom: 16px; }
+
+.ir-rule-card--clickable { cursor: pointer; }
+.ir-rule-card--static { cursor: default; }

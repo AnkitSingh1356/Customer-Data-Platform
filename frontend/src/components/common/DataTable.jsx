@@ -1,4 +1,6 @@
-//cdp-bulk-upload\sidebar-app\src\components\common\DataTable.jsx
+// Generic table renderer driven by a columns config array.
+// Each column may supply a render(row) function for custom cell content;
+// otherwise the cell value is read directly from row[col.key].
 const DataTable = ({
     columns = [],
     data = [],

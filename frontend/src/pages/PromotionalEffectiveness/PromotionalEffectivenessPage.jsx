@@ -70,9 +70,11 @@ import CampaignDetailsModal from "../../components/PromotionalEffectiveness/Camp
       selectedCampaign,
       setSelectedCampaign,
     ] = useState(null);
+    // Dashboard charts (overview, budget, distribution) load once on mount
     useEffect(() => {
       loadDashboard();
     }, []);
+    // Campaign table refetches whenever the debounced search or status filter changes
     useEffect(() => {
       loadCampaigns();
     }, [debouncedSearch, status]);

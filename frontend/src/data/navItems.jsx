@@ -1,3 +1,4 @@
+// Master list of every possible nav item; used for reference and future dynamic menus
 export const allNavItems = [
   { id: "dashboard",            label: "Dashboard",                 icon: "dashboard" },
   { id: "customer360",          label: "Customer 360",              icon: "customer360" },
@@ -13,7 +14,10 @@ export const allNavItems = [
   { id: "settings",             label: "Settings",                  icon: "settings" },
 ];
 
+// Persona-scoped nav item lists — only items present here are visible in the sidebar.
+// The id values must match the keys used in renderPage() (App.jsx) and canAccess().
 export const navItemsByPersona = {
+  // Admin sees everything, including access-management
   admin: [
     { id: "dashboard",            label: "Dashboard",               icon: "dashboard" },
     { id: "customer360",          label: "Customer 360",            icon: "customer360" },
@@ -28,6 +32,7 @@ export const navItemsByPersona = {
     { id: "release-notes",        label: "Release Notes",           icon: "releaseNotes" },
     { id: "settings",             label: "Settings",                icon: "settings" },
   ],
+  // Marketing sees customer and campaign-related pages only; no compliance or admin tools
   marketing: [
     { id: "dashboard",    label: "Dashboard",     icon: "dashboard" },
     { id: "customer360",  label: "Customer 360",  icon: "customer360" },
@@ -36,6 +41,7 @@ export const navItemsByPersona = {
     { id: "promotions",   label: "Promotions",    icon: "promotional" },
     { id: "release-notes",label: "Release Notes", icon: "releaseNotes" },
   ],
+  // Compliance sees consent, audit, and policy pages; no customer data or campaign tools
   compliance: [
     { id: "dashboard",    label: "Dashboard",     icon: "dashboard" },
     { id: "consent",      label: "Consent",       icon: "consentCompliance" },

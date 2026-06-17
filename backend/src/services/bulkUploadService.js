@@ -1,9 +1,10 @@
-//cdp-bulk-upload\cdp-backend\src\services\bulkUploadService.js
 const pool = require("../config/db");
 const { parseCSV }    = require("../utils/csvParser");
 const { generateCdpId } = require("../utils/cdpId");
 const fs              = require("fs");
+const { UPLOAD_CHUNK_SIZE, MAX_UPLOAD_ERRORS } = require("../config/constants");
 
+// Creates a new upload job record in 'pending' state and returns its ID
 async function createJob(filename) {
   const res = await pool.query(
     `INSERT INTO bulk_upload_jobs (filename, status)
@@ -13,6 +14,7 @@ async function createJob(filename) {
   return res.rows[0].id;
 }
 
+// Transitions job status to 'processing' so the UI can show progress
 async function markProcessing(jobId) {
   await pool.query(
     `UPDATE bulk_upload_jobs SET status = 'processing' WHERE id = $1`,
@@ -20,6 +22,7 @@ async function markProcessing(jobId) {
   );
 }
 
+// Writes final counters and error log to the job record; called on both success and failure
 async function finaliseJob(jobId, { totalRows, successCount, failedCount, errorLog, status }) {
   await pool.query(
     `UPDATE bulk_upload_jobs
@@ -34,6 +37,7 @@ async function finaliseJob(jobId, { totalRows, successCount, failedCount, errorL
   );
 }
 
+// Orchestrates the full upload pipeline: parse CSV → upsert chunks → finalise job
 async function processUpload(jobId, filePath, filename) {
   await markProcessing(jobId);
 
@@ -45,16 +49,18 @@ async function processUpload(jobId, filePath, filename) {
   try {
     const { rows, errors } = await parseCSV(filePath);
 
+    // Cap parse-level errors stored in memory to avoid unbounded log growth
     failedCount += errors.length;
-    errorLog.push(...errors.slice(0, 200)); 
+    errorLog.push(...errors.slice(0, MAX_UPLOAD_ERRORS));
     totalRows = rows.length + errors.length;
 
-    const CHUNK = 100;
-    for (let i = 0; i < rows.length; i += CHUNK) {
-      const chunk = rows.slice(i, i + CHUNK);
+    // Process in batches to keep individual transactions small
+    for (let i = 0; i < rows.length; i += UPLOAD_CHUNK_SIZE) {
+      const chunk = rows.slice(i, i + UPLOAD_CHUNK_SIZE);
       await upsertChunk(jobId, chunk, errorLog);
     }
 
+    // Derive success count from total valid rows minus any upsert failures
     const upsertFails = errorLog.length - errors.length;
     successCount = rows.length - upsertFails;
     failedCount  = totalRows - successCount;
@@ -77,11 +83,13 @@ async function processUpload(jobId, filePath, filename) {
       status: "failed",
     });
   } finally {
+    // Always remove the temp file regardless of success or failure
     try { fs.unlinkSync(filePath); } catch (_) {}
   }
 }
 
 
+// Maps Postgres constraint error codes to human-readable messages for the error log
 function friendlyDbError(e) {
   if (e.code === "23505") return "Duplicate record — row already exists.";
   if (e.code === "23502") return "Missing required field.";
@@ -89,6 +97,8 @@ function friendlyDbError(e) {
   return "Database error — row could not be inserted.";
 }
 
+// Upserts a batch of customer rows; per-row SAVEPOINTs let one failure skip
+// without aborting the rest of the chunk
 async function upsertChunk(jobId, rows, errorLog) {
   const client = await pool.connect();
   try {
@@ -98,6 +108,7 @@ async function upsertChunk(jobId, rows, errorLog) {
         await client.query("SAVEPOINT row_save");
         const cdpId = generateCdpId();
 
+        // On email conflict, update mutable fields but preserve existing non-null values
         await client.query(
           `INSERT INTO customers
              (cdp_id, first_name, last_name, email, phone,
@@ -128,11 +139,13 @@ async function upsertChunk(jobId, rows, errorLog) {
         await client.query("RELEASE SAVEPOINT row_save");
 
       } catch (rowErr) {
+        // Roll back only this row's savepoint, then log and continue
         await client.query("ROLLBACK TO SAVEPOINT row_save");
         console.error(`[upsertChunk] row ${row._rowNum}:`, rowErr.message);
         const safeMsg = `Row ${row._rowNum}: ${friendlyDbError(rowErr)}`;
         errorLog.push(safeMsg);
 
+        // Persist per-row error details for the job report; ignore if this insert fails
         await pool.query(
           `INSERT INTO upload_errors (job_id, row_number, row_data, error_msg)
            VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
@@ -145,6 +158,7 @@ async function upsertChunk(jobId, rows, errorLog) {
   }
 }
 
+// Retrieves job status and counters for polling or result display
 async function getJob(jobId) {
   const res = await pool.query(
     `SELECT id, filename, status, total_rows, success_count,

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 
+// Formats ISO date strings for the "Detected on" column; returns "—" for nulls
 const formatDate = (dateStr) => {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -9,9 +10,13 @@ const formatDate = (dateStr) => {
   });
 };
 
+// Renders potential duplicate customer pairs with per-row and bulk merge actions.
+// Row identity is keyed on the customer_id + duplicate_customer_id pair because
+// rows lack a single unique id field.
 const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
   const [selected, setSelected] = useState([]);
 
+  // Reset selection whenever the displayed rows change (e.g. after a merge)
   useEffect(() => {
     setSelected([]);
   }, [rows]);
@@ -55,6 +60,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
     }
   };
 
+  // Matches by composite key since rows have no standalone unique id
   const isRowSelected = (row) =>
     selected.some(
       (s) =>
@@ -69,7 +75,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
   };
 
   return (
-    <div className="identity-card" style={{ marginTop: 24 }}>
+    <div className="identity-card ir-merge-table-wrap">
       <div className="table-header">
         <div>
           <h2>Merge Queue</h2>
@@ -95,7 +101,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
         <thead>
           <tr>
             {onMerge && (
-              <th style={{ width: 40 }}>
+              <th className="ir-merge-col-check">
                 <input
                   type="checkbox"
                   checked={allSelected}
@@ -117,8 +123,10 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
             const isMerged = row.action === "merged";
             const isDismissed = row.action === "dismissed";
             const isReview = row.action === "review";
+            // Rows with no action value are still pending resolution
             const isPending = !row.action;
 
+            // Map action state to display label and CSS modifier class
             let statusLabel = "Detected";
             let statusClass = "status-badge";
             if (isMerged) { statusLabel = "Merged"; statusClass = "status-badge status-badge-merged"; }
@@ -142,7 +150,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
                 <td>
                   <div>
                     <strong>{row.customer_name}</strong>
-                    <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+                    <p className="ir-merge-cell-meta">
                       {row.customer_email}
                     </p>
                   </div>
@@ -151,7 +159,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
                 <td>
                   <div>
                     <strong>{row.duplicate_name}</strong>
-                    <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+                    <p className="ir-merge-cell-meta">
                       {row.duplicate_email}
                     </p>
                   </div>
@@ -173,7 +181,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
                   <span className={statusClass}>{statusLabel}</span>
                 </td>
 
-                <td style={{ whiteSpace: "nowrap", color: "#6b7280", fontSize: 13 }}>
+                <td className="ir-merge-nowrap">
                   {formatDate(row.detected_on)}
                 </td>
 
@@ -183,7 +191,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
                       Merge
                     </button>
                   ) : (
-                    <span style={{ color: "#9ca3af", fontSize: 13 }}>
+                    <span className="ir-merge-empty">
                       {isMerged ? "Merged" : isDismissed ? "Dismissed" : isReview ? "In Review" : "—"}
                     </span>
                   )}

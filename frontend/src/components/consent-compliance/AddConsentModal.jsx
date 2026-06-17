@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+// Initial form state; all three consent channels default to "none" (unset)
 const defaultForm = {
   customer_name: "",
   customer_email: "",
@@ -34,9 +35,9 @@ const AddConsentModal = ({
 
   async function handleSubmit(e) {
     e.preventDefault();
-
+    // Native HTML validation (required/type="email") runs before this handler
     await onSubmit(form);
-
+    // Reset to defaults so the form is clean if the modal is reopened
     setForm(defaultForm);
   }
 

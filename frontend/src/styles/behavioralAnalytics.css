@@ -59,16 +59,16 @@
   padding: 0 16px;
   border: none;
   border-radius: 10px;
-  background: #0ea5e9;
+  background: var(--sky-color);
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background var(--transition-base);
 }
 
 .ba-export-btn:hover {
-  background: #0284c7;
+  background: var(--sky-hover);
 }
 
 /* =========================================================
@@ -421,7 +421,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #0ea5e9;
+  background: var(--sky-color);
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
@@ -474,7 +474,7 @@
   height: 34px;
   border-radius: 50%;
   border: 3px solid #dbeafe;
-  border-top-color: #0ea5e9;
+  border-top-color: var(--sky-color);
   animation: baSpin 0.8s linear infinite;
 }
 
@@ -483,6 +483,9 @@
     transform: rotate(360deg);
   }
 }
+
+.ba-chart-section { display: flex; flex-direction: column; gap: 8px; }
+.ba-chart-label { font-size: 13px; font-weight: 500; }
 
 /* =========================================================
    RECHARTS

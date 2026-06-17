@@ -18,7 +18,7 @@ const Section = ({ icon, title, count, badge, defaultOpen = true, children }) =>
           {badge && <span className="dn-detail-section-badge">{badge}</span>}
         </span>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.18s" }}>
+          className={`icon-chevron${open ? " icon-chevron--open" : ""}`}>
           <polyline points="18 15 12 9 6 15"/>
         </svg>
       </button>
@@ -41,7 +41,7 @@ const RelatedDealerRow = ({ d }) => (
     </div>
     <div className="dn-related-tags">
       {d.relation && <span className="dn-relation-tag">{d.relation}</span>}
-      <span className={`dn-tier-pill ${tierClass(d.tier)}`} style={{ textTransform: "capitalize" }}>
+      <span className={`dn-tier-pill ${tierClass(d.tier)} text-capitalize`}>
         {d.tier ? d.tier.charAt(0).toUpperCase() + d.tier.slice(1) : "—"}
       </span>
     </div>
@@ -97,8 +97,10 @@ const AccessStewardship = ({ dealer, onRequestSent }) => {
   const [uuid,    setUuid]    = useState("");
   const [sending, setSending] = useState(false);
   const [err,     setErr]     = useState("");
+  // Initialise local list from dealer prop; updated optimistically after submit
   const [reqs,    setReqs]    = useState(dealer.access_requests ?? []);
 
+  // Validates UUID input, submits access request, and prepends result locally
   const handleRequest = async () => {
     if (!uuid.trim()) { setErr("Please enter a target user UUID."); return; }
     setSending(true); setErr("");
@@ -159,6 +161,7 @@ const DealerDetailModal = ({ code, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState("");
 
+  // Loads full dealer detail by code; re-runs if code prop changes
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try { setDealer(await fetchDealerDetail(code)); }

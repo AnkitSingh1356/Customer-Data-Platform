@@ -1,3 +1,6 @@
+// Allows toggling each consent channel between "granted" and "revoked".
+// onToggle(key, newStatus) is called immediately — no save button; changes
+// are applied one channel at a time so the parent can persist each update.
 const EditConsentModal = ({
     open,
     record,
@@ -5,7 +8,8 @@ const EditConsentModal = ({
     onToggle,
   }) => {
     if (!open || !record) return null;
-  
+
+    // Binary toggle: any non-granted status flips to granted, and vice versa
     function nextStatus(status) {
       return status === "granted"
         ? "revoked"

@@ -1,5 +1,6 @@
-//backend\src\controllers\consentComplianceController.js
 const consentService = require("../services/consentComplianceService");
+
+// Returns aggregated consent KPIs (opt-in rates, expiring consents, violations)
 const getDashboardOverview = async (req, res) => {
   try {
     const data = await consentService.getDashboardOverview();
@@ -18,8 +19,10 @@ const getDashboardOverview = async (req, res) => {
   }
 };
 
+// Returns paginated consent records; status filter supports: all, active, expired, revoked
 const getConsentRecords = async (req, res) => {
   try {
+    // Coerce page/limit to numbers; defaults ensure a safe first-page response
     const { search = "", status = "all", page = 1, limit = 10 } = req.query;
 
     const data = await consentService.getConsentRecords({
@@ -43,6 +46,7 @@ const getConsentRecords = async (req, res) => {
   }
 };
 
+// Creates a new consent record; service validates required consent fields
 const createConsentRecord = async (req, res) => {
   try {
     const created = await consentService.createConsentRecord(req.body);
@@ -61,6 +65,7 @@ const createConsentRecord = async (req, res) => {
   }
 };
 
+// Updates an existing consent record (e.g., status change on withdrawal or renewal)
 const updateConsentRecord = async (req, res) => {
   try {
     const updated = await consentService.updateConsentRecord(
@@ -82,6 +87,7 @@ const updateConsentRecord = async (req, res) => {
   }
 };
 
+// Exports the full consent audit trail for regulatory reporting (GDPR/CCPA compliance)
 const exportAuditLogs = async (req, res) => {
   try {
     const logs = await consentService.exportAuditLogs();
@@ -101,6 +107,7 @@ const exportAuditLogs = async (req, res) => {
 };
 
 
+// Bulk-exports all consent records (no pagination) for data portability requests
 const exportConsentRecords = async (req, res) => {
   try {
     const records = await consentService.getAllConsentRecords();

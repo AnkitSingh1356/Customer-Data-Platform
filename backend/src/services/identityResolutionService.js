@@ -1,17 +1,25 @@
 const db = require("../config/db");
 
+// Returns aggregate duplicate-detection stats (counts by action status and
+// average confidence). Active matching rules are loaded at call time so the
+// query always reflects the current rule configuration.
 const getDashboard = async () => {
   const rulesResult = await db.query('SELECT id, is_active FROM identity_resolution_rules');
   const rules = rulesResult.rows;
 
+  // Build WHERE clause dynamically from whichever rules are currently enabled.
+  // Rule IDs: 1 = email match, 2 = phone match, 3 = first-name + city match.
   const conditions = [];
   // pg returns numeric columns as strings — use Number() for reliable comparison
   if (rules.find(r => Number(r.id) === 1)?.is_active) conditions.push(`LOWER(c1.email) = LOWER(c2.email)`);
   if (rules.find(r => Number(r.id) === 2)?.is_active) conditions.push(`(c1.phone IS NOT NULL AND c1.phone = c2.phone)`);
   if (rules.find(r => Number(r.id) === 3)?.is_active) conditions.push(`(LOWER(c1.first_name) = LOWER(c2.first_name) AND LOWER(COALESCE(c1.city, '')) = LOWER(COALESCE(c2.city, '')))`);
 
+  // Fall back to '1=0' (match nothing) when no rules are active
   const whereClause = conditions.length > 0 ? conditions.join(' OR ') : '1=0';
 
+  // Self-join on c1.id < c2.id ensures each pair is counted exactly once.
+  // LATERAL subquery fetches only the most recent resolution action per pair.
   const dashboardQuery = `
     SELECT
       COUNT(*)                                              AS total_duplicates,
@@ -77,12 +85,16 @@ const toggleRule = async (id) => {
   return result.rows[0];
 };
 
+// Returns paginated duplicate-match pairs with per-pair confidence scores
+// derived from whichever matching rule triggered the match.
 const getMatches = async ({ search, page, limit }) => {
   const offset = (page - 1) * limit;
 
   const rulesResult = await db.query('SELECT id, confidence_score, is_active FROM identity_resolution_rules');
   const rules = rulesResult.rows;
 
+  // Confidence score is assigned via CASE matching the same predicate used in
+  // the WHERE clause, so each pair gets the score of its triggering rule.
   const conditions = [];
   const caseStatements = [];
 
@@ -202,6 +214,9 @@ const getMatches = async ({ search, page, limit }) => {
   };
 };
 
+// Records a merge decision and marks the duplicate customer as 'Merged' in a
+// single atomic transaction. ON CONFLICT updates an existing log entry so
+// re-merging a pair does not create duplicate audit rows.
 const mergeProfiles = async ({ customerId, duplicateId, confidenceScore }) => {
   const client = await db.connect();
   try {
@@ -216,6 +231,7 @@ const mergeProfiles = async ({ customerId, duplicateId, confidenceScore }) => {
       [customerId, duplicateId, confidenceScore]
     );
 
+    // Soft-delete the duplicate by status rather than hard DELETE to preserve history
     await client.query(
       `UPDATE customers SET status = 'Merged' WHERE id = $1`,
       [duplicateId]

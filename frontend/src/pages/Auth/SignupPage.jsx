@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth }  from "../../auth/AuthContext";
 
+// Customer type options shown only when account_type === "customer"
 const CUSTOMER_TYPES = [
   { value: "Dealer",       label: "Dealer" },
   { value: "B2B Customer", label: "B2B Customer" },
@@ -21,6 +22,7 @@ const SignupPage = ({ onSwitchToLogin }) => {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Determines whether the customer_type dropdown is rendered and which role is sent
   const isCustomer = form.account_type === "customer";
 
   const validate = () => {
@@ -38,6 +40,7 @@ const SignupPage = ({ onSwitchToLogin }) => {
     if (err) { setError(err); return; }
     setError("");
     try {
+      // Non-customer registrations are created as admins with "Employee" type
       await register({
         full_name:     form.full_name.trim(),
         email:         form.email.trim(),

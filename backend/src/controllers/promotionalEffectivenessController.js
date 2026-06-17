@@ -1,5 +1,6 @@
 const promotionalService = require("../services/promotionalEffectivenessService");
 
+// Returns top-level campaign performance metrics (total spend, impressions, conversions)
 const getOverview = async (_req, res) => {
   try {
     const data = await promotionalService.getOverview();
@@ -18,6 +19,7 @@ const getOverview = async (_req, res) => {
   }
 };
 
+// Returns campaigns filtered by name/status; status supports: all, active, paused, ended
 const getCampaigns = async (req, res) => {
   try {
     const {
@@ -45,6 +47,7 @@ const getCampaigns = async (req, res) => {
   }
 };
 
+// Returns budget vs. actual spend breakdown across campaigns for ROI analysis
 const getBudgetPerformance = async (_req, res) => {
   try {
     const data =
@@ -65,6 +68,7 @@ const getBudgetPerformance = async (_req, res) => {
   }
 };
 
+// Returns campaign count grouped by status for dashboard pie/bar chart display
 const getStatusDistribution = async (_req, res) => {
   try {
     const data =
@@ -85,6 +89,7 @@ const getStatusDistribution = async (_req, res) => {
   }
 };
 
+// Exports all campaign records (no filters) for offline reporting or data transfer
 const exportCampaigns = async (_req, res) => {
   try {
     const data =

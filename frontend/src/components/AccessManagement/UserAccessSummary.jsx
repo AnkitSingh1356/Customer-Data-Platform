@@ -1,3 +1,5 @@
+// Modal that displays a full read-only access profile for a single user,
+// covering permissions, menu/page access, security risk level, and audit history.
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi, auditApi } from "../../services/rbacService";
@@ -49,6 +51,8 @@ function daysSince(ts) {
   return Math.floor(ms / (1000 * 60 * 60 * 24));
 }
 
+// Derives a security risk level from account status, role assignments, and
+// days since last login. High = inactive or no permissions; Medium = stale login.
 function riskLevel(user, access) {
   if (!user.is_active) return { level: "High", color: "#dc2626", bg: "#fef2f2" };
   const roles = access?.permissions?.length > 0 || access?.is_admin;
@@ -73,8 +77,8 @@ function ActionBadge({ action }) {
   const meta = ACTION_META[action] || { label: action, color: "#6b7280" };
   return (
     <span
-      className="am-role-tag"
-      style={{ background: meta.color + "18", color: meta.color, border: `1px solid ${meta.color}40`, whiteSpace: "nowrap" }}
+      className="am-role-tag am-audit-badge"
+      style={{ background: meta.color + "18", color: meta.color, borderColor: meta.color + "40" }}
     >
       {meta.label}
     </span>
@@ -91,8 +95,10 @@ function CheckIcon({ granted }) {
 function OverviewTab({ summary }) {
   const { access, all_modules, all_menus, restricted_modules, restricted_pages, user } = summary;
 
+  // Build a "module:action" lookup to resolve effective permissions in O(1).
   const permSet = new Set(access.permissions.map((p) => `${p.module_key}:${p.action}`));
 
+  // Admins implicitly have every action; non-admins are checked against permSet.
   const matrix = all_modules.map((mod) => ({
     ...mod,
     actions: PERM_ACTIONS.reduce((acc, action) => {
@@ -111,13 +117,13 @@ function OverviewTab({ summary }) {
       {/* Effective Permissions Matrix */}
       <div className="uas-section">
         <h4 className="uas-section-title">Effective Permissions</h4>
-        <div className="am-table-wrap" style={{ overflowX: "auto" }}>
+        <div className="am-table-wrap am-summary-table-wrap">
           <table className="am-matrix-table">
             <thead>
               <tr>
                 <th className="am-matrix-module-col am-matrix-module-name">Module</th>
                 {PERM_ACTIONS.map((a) => (
-                  <th key={a} className="am-matrix-action-col" style={{ textTransform: "capitalize" }}>{a}</th>
+                  <th key={a} className="am-matrix-action-col am-col-capitalize">{a}</th>
                 ))}
               </tr>
             </thead>
@@ -125,8 +131,8 @@ function OverviewTab({ summary }) {
               {matrix.map((mod) => (
                 <tr key={mod.key}>
                   <td className="am-matrix-module-name">
-                    <span style={{ fontWeight: 600, color: "#1f2937", fontSize: "0.82rem" }}>{mod.label}</span>
-                    <span className="am-code" style={{ marginLeft: 6 }}>{mod.key}</span>
+                    <span className="am-summary-label">{mod.label}</span>
+                    <span className="am-code am-summary-count">{mod.key}</span>
                   </td>
                   {PERM_ACTIONS.map((action) => (
                     <td key={action} className="am-matrix-cell">
@@ -247,14 +253,14 @@ function PermissionsTab({ summary }) {
   if (!permission_sources.length) {
     return (
       <div className="uas-tab-body">
-        <p className="am-text-muted" style={{ fontSize: "0.82rem", padding: "16px 0" }}>
+        <p className="am-text-muted am-permission-cell">
           No role-based permissions assigned. This user has no effective access.
         </p>
       </div>
     );
   }
 
-  // Group by role
+  // Group raw permission_sources by role so each role card shows its own grants.
   const byRole = permission_sources.reduce((acc, src) => {
     if (!acc[src.role_id]) acc[src.role_id] = { name: src.role_name, byModule: {} };
     const mod = src.module_key;
@@ -265,7 +271,7 @@ function PermissionsTab({ summary }) {
     return acc;
   }, {});
 
-  // Unique permissions for dedup summary
+  // Deduplicate across roles so the consolidated table shows each action once.
   const effectiveSet = new Set(permission_sources.map((s) => `${s.module_key}:${s.action}`));
   const effectiveByModule = permission_sources.reduce((acc, src) => {
     const key = `${src.module_key}:${src.action}`;
@@ -294,8 +300,8 @@ function PermissionsTab({ summary }) {
               {Object.entries(effectiveByModule).map(([moduleKey, mod]) => (
                 <tr key={moduleKey}>
                   <td>
-                    <span style={{ fontWeight: 600 }}>{mod.label}</span>
-                    <span className="am-code" style={{ marginLeft: 6 }}>{moduleKey}</span>
+                    <span className="am-stat-bold">{mod.label}</span>
+                    <span className="am-code am-stat-margin">{moduleKey}</span>
                   </td>
                   <td>
                     <div className="am-roles-list">
@@ -314,17 +320,17 @@ function PermissionsTab({ summary }) {
       {/* Permission Source Breakdown */}
       <div className="uas-section">
         <h4 className="uas-section-title">Permission Sources</h4>
-        <p className="uas-note" style={{ marginBottom: 12 }}>
+        <p className="uas-note am-summary-mb">
           Shows which RBAC roles are granting permissions to this user.
         </p>
         <div className="uas-source-list">
           {Object.entries(byRole).map(([roleId, role]) => (
             <div key={roleId} className="uas-source-card">
               <div className="uas-source-header">
-                <span className="am-role-tag" style={{ fontSize: "0.82rem", padding: "3px 10px" }}>
+                <span className="am-role-tag am-summary-padding">
                   {role.name}
                 </span>
-                <span className="am-text-muted" style={{ fontSize: "0.76rem" }}>
+                <span className="am-text-muted am-summary-text-sm">
                   {Object.values(role.byModule).reduce((n, m) => n + m.actions.length, 0)} permissions
                 </span>
               </div>
@@ -383,7 +389,7 @@ function ActivityTab({ summary }) {
             <span className="uas-info-value">{user.department || <span className="am-text-muted">—</span>}</span>
           </div>
         </div>
-        <p className="uas-note" style={{ marginTop: 8 }}>
+        <p className="uas-note am-history-margin-top">
           Detailed login history and session tracking require additional audit infrastructure not currently enabled.
         </p>
       </div>
@@ -467,6 +473,7 @@ function AccessHistoryTab({ userId }) {
   const [loading, setLoading] = useState(false);
   const [page,    setPage]    = useState(1);
 
+  // Filters audit logs to only entries where this user is the target.
   const load = useCallback(async (p = 1) => {
     setLoading(true);
     try {
@@ -474,12 +481,14 @@ function AccessHistoryTab({ userId }) {
       setData(res);
       setPage(p);
     } catch {
+      // Silently show empty state rather than blocking the whole modal on audit failure.
       setData({ logs: [], total: 0, page: 1, limit: 10 });
     } finally {
       setLoading(false);
     }
   }, [userId, authHeader]);
 
+  // Defer the audit API call until the user explicitly opens this tab.
   if (!data && !loading) {
     return (
       <div className="uas-tab-body" style={{ textAlign: "center", padding: "32px 0" }}>
@@ -598,6 +607,7 @@ export default function UserAccessSummary({ user, onClose }) {
   const [error,      setError]      = useState(null);
   const [activeTab,  setActiveTab]  = useState("overview");
 
+  // Cancellation flag prevents setState calls if the modal is closed mid-fetch.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);

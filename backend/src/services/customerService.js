@@ -1,6 +1,8 @@
 const pool = require("../config/db");
-const RESTRICTED_TYPES = new Set(["Dealer", "B2B Customer", "B2C Customer"]);
+const { RESTRICTED_CUSTOMER_TYPES } = require("../config/constants");
 
+// Returns a paginated customer list; non-admin restricted viewers see only
+// their own customer_type — returns { customers, total, page, limit }
 async function getCustomers({
   type,
   status,
@@ -15,7 +17,8 @@ async function getCustomers({
   const params = [];
   let p = 1;
 
-  const isRestricted = viewerRole !== "admin" && RESTRICTED_TYPES.has(viewerCustomerType);
+  // Restrict non-admin users in sensitive types to their own customer_type scope
+  const isRestricted = viewerRole !== "admin" && RESTRICTED_CUSTOMER_TYPES.has(viewerCustomerType);
 
   if (isRestricted) {
     conditions.push(`customer_type ILIKE $${p++}`);
@@ -44,9 +47,11 @@ async function getCustomers({
   }
 
   const where     = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
+  // Cap page size at 200 to avoid unbounded result sets
   const safeLimit = Math.min(Math.max(parseInt(limit || "20", 10), 1), 200);
   const offset    = (Math.max(parseInt(page || "1", 10), 1) - 1) * safeLimit;
 
+  // Run count and data fetch in parallel to minimise round-trips
   const [countRes, dataRes] = await Promise.all([
     pool.query(`SELECT COUNT(*) FROM customers ${where}`, params),
     pool.query(
@@ -67,8 +72,11 @@ async function getCustomers({
   return { customers: dataRes.rows, total: parseInt(countRes.rows[0].count, 10), page, limit: safeLimit };
 }
 
+// Returns dashboard KPI stats with period-over-period growth percentages.
+// Applies the same role-scoping as getCustomers so restricted viewers only
+// see metrics for their own customer_type.
 async function getStats({ viewerRole, viewerCustomerType } = {}) {
-  const isRestricted = viewerRole !== "admin" && RESTRICTED_TYPES.has(viewerCustomerType);
+  const isRestricted = viewerRole !== "admin" && RESTRICTED_CUSTOMER_TYPES.has(viewerCustomerType);
   const scopeWhere   = isRestricted ? `WHERE customer_type ILIKE $1` : "";
   const scopeParams  = isRestricted ? [viewerCustomerType] : [];
 
@@ -93,6 +101,8 @@ async function getStats({ viewerRole, viewerCustomerType } = {}) {
       FROM customers ${scopeWhere}
     ),
 
+    -- Baseline period (30-day lag) used to compute growth deltas.
+    -- GREATEST(..., 1) prevents division-by-zero in the final SELECT.
     previous_stats AS (
       SELECT
         GREATEST(
@@ -109,7 +119,7 @@ async function getStats({ viewerRole, viewerCustomerType } = {}) {
           ),
           1
         ) AS prev_active_month,
-    
+
         GREATEST(
           COUNT(*) FILTER (
             WHERE created_at >= NOW() - INTERVAL '14 days'
@@ -117,7 +127,7 @@ async function getStats({ viewerRole, viewerCustomerType } = {}) {
           ),
           1
         ) AS prev_new_week,
-    
+
         GREATEST(
           COALESCE(
             ROUND(

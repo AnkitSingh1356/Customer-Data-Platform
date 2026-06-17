@@ -4,6 +4,7 @@ const {
 } = require("../services/profileService");
 
 
+// Returns the full unified profile for a customer identified by their CDP ID
 async function fetchProfile(req, res) {
   const { cdpId } = req.params;
   try {
@@ -15,10 +16,12 @@ async function fetchProfile(req, res) {
     return res.status(500).json({ error: "Failed to fetch profile." });
   }
 }
+// Attaches a flexible key-value attribute to a profile, enabling custom data extension
 async function createAttribute(req, res) {
   const { cdpId } = req.params;
   const { attr_type, attr_key, attr_value } = req.body;
 
+  // Reject empty strings early to prevent polluting the attribute store
   if (!attr_key?.trim() || !attr_value?.trim()) {
     return res.status(400).json({ error: "attr_key and attr_value are required." });
   }

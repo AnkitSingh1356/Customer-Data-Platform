@@ -1,6 +1,9 @@
 const pool = require("../config/db");
+const { VALID_CONSENT_STATUSES, CONSENT_EXPORT_LIMIT } = require("../config/constants");
 
+// Builds KPI summary, policy list, and chart data for the consent dashboard
 const getDashboardOverview = async () => {
+  // A record counts as 'granted' if any one consent category is granted
   const totalQuery = `
     SELECT COUNT(*)::int AS total
     FROM consent_records
@@ -44,6 +47,7 @@ const getDashboardOverview = async () => {
     ORDER BY updated_at DESC
   `;
 
+  // Run all five queries in parallel to minimise dashboard load time
   const [
     totalResult,
     grantedResult,
@@ -70,6 +74,7 @@ const getDashboardOverview = async () => {
   const pending =
     pendingResult.rows[0]?.total || 0;
 
+  // Guard against division-by-zero when no records exist yet
   const consentRate =
     total > 0
       ? ((granted / total) * 100).toFixed(1)
@@ -110,6 +115,7 @@ const getDashboardOverview = async () => {
   };
 };
 
+// Returns a paginated, filterable list of consent records with total count
 const getConsentRecords = async ({
   search,
   status,
@@ -120,6 +126,7 @@ const getConsentRecords = async ({
 
   const values = [];
 
+  // Start with a tautology so additional filters can always be appended with AND
   let whereClause = `WHERE 1=1`;
 
   if (search?.trim()) {
@@ -173,9 +180,11 @@ const getConsentRecords = async ({
     ${whereClause}
   `;
 
+  // Strip LIMIT and OFFSET params — they must not appear in the count query
   const countValues =
     values.slice(0, values.length - 2);
 
+  // Fetch page and total count concurrently
   const [recordsResult, countResult] =
     await Promise.all([
       pool.query(dataQuery, values),
@@ -195,9 +204,9 @@ const getConsentRecords = async ({
   };
 };
 
-const VALID_STATUSES = ["granted", "revoked", "pending"];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Creates a consent record and writes a CREATE_CONSENT audit entry in one transaction
 const createConsentRecord = async (payload) => {
   const {
     customer_name,
@@ -216,8 +225,8 @@ const createConsentRecord = async (payload) => {
   if (!EMAIL_RE.test(customer_email.trim())) {
     throw Object.assign(new Error("Invalid customer_email format."), { status: 400 });
   }
-  if (![marketing_status, analytics_status, personalization_status].every(s => VALID_STATUSES.includes(s))) {
-    throw Object.assign(new Error(`Status values must be one of: ${VALID_STATUSES.join(", ")}.`), { status: 400 });
+  if (![marketing_status, analytics_status, personalization_status].every(s => VALID_CONSENT_STATUSES.includes(s))) {
+    throw Object.assign(new Error(`Status values must be one of: ${VALID_CONSENT_STATUSES.join(", ")}.`), { status: 400 });
   }
 
   const client = await pool.connect();
@@ -252,15 +261,17 @@ const createConsentRecord = async (payload) => {
   }
 };
 
+// Updates consent statuses and writes an UPDATE_CONSENT audit entry in one transaction
 const updateConsentRecord = async (id, payload) => {
-  if (![payload.marketing_status, payload.analytics_status, payload.personalization_status].every(s => VALID_STATUSES.includes(s))) {
-    throw Object.assign(new Error(`Status values must be one of: ${VALID_STATUSES.join(", ")}.`), { status: 400 });
+  if (![payload.marketing_status, payload.analytics_status, payload.personalization_status].every(s => VALID_CONSENT_STATUSES.includes(s))) {
+    throw Object.assign(new Error(`Status values must be one of: ${VALID_CONSENT_STATUSES.join(", ")}.`), { status: 400 });
   }
 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
+    // CTE captures the pre-update state so the audit log records what changed
     const result = await client.query(
       `WITH old AS (
          SELECT marketing_status, analytics_status, personalization_status
@@ -291,6 +302,7 @@ const updateConsentRecord = async (id, payload) => {
     );
 
     await client.query("COMMIT");
+    // Remove the CTE helper column before returning the record to the caller
     delete updated.previous_data;
     return updated;
   } catch (e) {
@@ -301,8 +313,10 @@ const updateConsentRecord = async (id, payload) => {
   }
 };
 
+// Exports consent audit history joined with customer names; capped at 50 000 rows
 const exportAuditLogs = async ({ limit = 10000 } = {}) => {
-  const safeLimit = Math.min(Number(limit) || 10000, 50000);
+  // Hard ceiling prevents runaway memory use on large datasets
+  const safeLimit = Math.min(Number(limit) || 10000, CONSENT_EXPORT_LIMIT);
   const query = `
     SELECT
       l.id,
@@ -320,8 +334,9 @@ const exportAuditLogs = async ({ limit = 10000 } = {}) => {
   return result.rows;
 };
 
+// Fetches all consent records for bulk export; capped at 50 000 rows
 const getAllConsentRecords = async ({ limit = 10000 } = {}) => {
-  const safeLimit = Math.min(Number(limit) || 10000, 50000);
+  const safeLimit = Math.min(Number(limit) || 10000, CONSENT_EXPORT_LIMIT);
   const query = `
     SELECT
       customer_name,

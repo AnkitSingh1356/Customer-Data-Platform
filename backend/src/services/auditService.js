@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 
+// Canonical action-type constants shared across all permission audit calls
 const ACTIONS = {
   USER_CREATED:         "USER_CREATED",
   USER_UPDATED:         "USER_UPDATED",
@@ -15,6 +16,8 @@ const ACTIONS = {
   PAGE_ACCESS_UPDATED:  "PAGE_ACCESS_UPDATED",
 };
 
+// Persists a permission-change event; errors are swallowed so audit never
+// blocks the operation that triggered it
 async function log({
   action,
   performedBy,
@@ -26,6 +29,7 @@ async function log({
   metadata,
 }) {
   try {
+    // Serialise before/after state as JSONB for flexible querying
     await pool.query(
       `INSERT INTO permission_audit_logs
          (action, performed_by_id, performed_by_name,
@@ -52,6 +56,7 @@ async function log({
   }
 }
 
+// Returns a paginated, filterable list of permission audit log entries
 async function getLogs({
   page           = 1,
   limit          = 20,
@@ -64,6 +69,7 @@ async function getLogs({
   const conditions = [];
   const params     = [];
 
+  // Build WHERE clause dynamically; only applied filters add parameters
   if (target_user_id) {
     params.push(parseInt(target_user_id, 10));
     conditions.push(`l.target_user_id = $${params.length}`);
@@ -83,12 +89,14 @@ async function getLogs({
     conditions.push(`l.created_at >= $${params.length}::timestamptz`);
   }
   if (to) {
+    // Add one day so the 'to' date is inclusive of the entire day
     params.push(to);
     conditions.push(`l.created_at <= ($${params.length}::date + INTERVAL '1 day')`);
   }
 
   const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
 
+  // Count with same filters before appending LIMIT/OFFSET params
   const countRes = await pool.query(
     `SELECT COUNT(*) FROM permission_audit_logs l ${where}`,
     params

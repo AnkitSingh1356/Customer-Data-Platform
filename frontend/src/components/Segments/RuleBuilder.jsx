@@ -1,3 +1,4 @@
+// Available filterable fields, grouped for the optgroup-based field selector
 export const RULE_FIELDS = [
   {
     group: "CUSTOMER",
@@ -33,12 +34,14 @@ export const RULE_FIELDS = [
   },
 ];
 
+// Operators available for free-text / categorical fields
 const TEXT_OPS = [
   { value: "equals", label: "Is" },
   { value: "not_equals", label: "Is not" },
   { value: "contains", label: "Contains" },
 ];
 
+// Operators available for numeric fields (supports range queries via "between")
 const NUMBER_OPS = [
   { value: "equals", label: "Is" },
   { value: "greater_than", label: "Greater than" },
@@ -46,6 +49,7 @@ const NUMBER_OPS = [
   { value: "between", label: "Between" },
 ];
 
+// Fields that should use numeric comparison operators instead of text operators
 const NUMBER_FIELDS = new Set([
   "quality_score",
   "order_frequency",
@@ -55,9 +59,11 @@ const NUMBER_FIELDS = new Set([
   "inventory_volume",
 ]);
 
+// Selects the correct operator set based on whether the field is numeric
 const getOperators = (field) =>
   field && NUMBER_FIELDS.has(field) ? NUMBER_OPS : TEXT_OPS;
 
+// Returns a blank rule object used as the starting state for new conditions
 const emptyRule = () => ({ field: "", operator: "", value: "" });
 
 const RuleRow = ({ rule, index, onChange, onRemove, showRemove }) => {
@@ -132,6 +138,8 @@ const RuleRow = ({ rule, index, onChange, onRemove, showRemove }) => {
   );
 };
 
+// Controlled component: manages an ordered list of conditions and the
+// AND/OR match mode. All mutations are lifted to the parent via onRulesChange.
 const RuleBuilder = ({ rules, matchType, onRulesChange, onMatchTypeChange }) => {
   const addRule   = () => onRulesChange([...rules, emptyRule()]);
   const removeRule = (i) => onRulesChange(rules.filter((_, idx) => idx !== i));

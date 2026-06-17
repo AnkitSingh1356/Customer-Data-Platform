@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+// Maps a DQI severity string to a CSS modifier class for badge coloring.
 const severityClass = (s = "") => {
   const v = s.toLowerCase();
   if (v === "high")   return "dqi-high";
@@ -67,6 +68,7 @@ const DataQualityIssues = ({ items }) => (
 );
 
 /* ── Flexible Attributes ─────────────────────────────────────── */
+// Predefined attribute categories assignable when adding a new entry.
 const ATTR_TYPES = ["Behavioral", "Demographic", "Transactional", "Custom"];
 
 const FlexibleAttributes = ({ items, onAdd }) => {
@@ -150,6 +152,8 @@ const ProfileTags = ({ tags = [] }) =>
     </div>
   ) : null;
 
+// Composes all supplementary profile sections below the core details grid.
+// Each sub-section defaults to an empty array so missing API fields render safely.
 const ProfileSections = ({ profile, onAdd }) => (
   <>
     <DealerAffiliations items={profile.dealer_affiliations || []} />

@@ -1,3 +1,5 @@
+// User management panel: create/edit users, assign RBAC roles, toggle
+// active status, and open the full UserAccessSummary modal.
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
@@ -13,6 +15,7 @@ const EMPTY_FORM = {
   department: "", phone: "",
 };
 
+// Maps the API user object to form state, deriving account_type from the system role field.
 function toFormInitial(user) {
   if (!user) return EMPTY_FORM;
   return {
@@ -64,6 +67,8 @@ function UserModal({ mode, initial, allRoles, onSave, onClose, loading }) {
 
   const isCustomer = form.account_type === "customer";
 
+  // Switching account type syncs the system role field and resets customer_type
+  // so admin users don't carry a customer-specific type.
   const handleAccountTypeChange = (v) => {
     setForm((f) => ({
       ...f,
@@ -85,8 +90,8 @@ function UserModal({ mode, initial, allRoles, onSave, onClose, loading }) {
     const err = validate();
     if (err) { setError(err); return; }
     setError("");
-    const { account_type, ...payload } = form; // strip UI-only field
-    if (mode === "edit") delete payload.password;
+    const { account_type, ...payload } = form; // account_type is UI-only; role carries the value
+    if (mode === "edit") delete payload.password; // password changes require a separate flow
     onSave(payload);
   };
 
@@ -216,18 +221,21 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(false);
   const [saving,  setSaving]  = useState(false);
   const [toast,   setToast]   = useState(null);
-  const [modal,   setModal]   = useState(null); // { type: 'create'|'edit'|'roles', user? }
+  // Discriminated union: type drives which modal renders; user carries the target record.
+  const [modal,   setModal]   = useState(null); // { type: 'create'|'edit'|'roles'|'summary', user? }
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
 
+  // Roles are fetched separately so the AssignRolesModal can render without
+  // waiting for the paginated user list to complete.
   const loadRoles = useCallback(async () => {
     try {
       const res = await rbacApi.getRoles({ limit: 100 }, authHeader());
       setAllRoles(res.roles || []);
-    } catch { /* non-critical */ }
+    } catch { /* non-critical — role list is only needed when assigning */ }
   }, [authHeader]);
 
   const loadUsers = useCallback(async (page = 1) => {

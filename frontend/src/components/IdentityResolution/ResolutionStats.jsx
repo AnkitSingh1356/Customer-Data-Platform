@@ -1,9 +1,11 @@
+// Renders a labelled progress bar showing count as a percentage of total.
+// "Merged" rows use a green fill to distinguish resolved from pending states.
 const StatRow = ({ label, count, total }) => {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   const isGreen = label === "Merged";
 
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div className="ir-stats-section">
       <div className="stats-row">
         <span>{label}</span>
         <span>

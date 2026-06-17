@@ -1,5 +1,7 @@
 const pool = require("../config/db");
 
+// Returns cross-campaign KPIs: overall spend-to-budget ratio (used as ROI
+// proxy), total committed budget, active campaign count, and mean conversion.
 const getOverview = async () => {
   const query = `
     SELECT
@@ -30,6 +32,8 @@ const getOverview = async () => {
   return rows[0];
 };
 
+// Returns all campaigns ordered by budget descending for bar-chart rendering
+// of budget vs. spend per campaign.
 const getBudgetPerformance = async () => {
   const query = `
     SELECT
@@ -48,6 +52,7 @@ const getBudgetPerformance = async () => {
   return rows;
 };
 
+// Returns campaign counts grouped by status for pie/donut chart consumption.
 const getStatusDistribution = async () => {
   const query = `
     SELECT
@@ -105,6 +110,8 @@ const getCampaigns = async ({
   return rows;
 };
 
+// Fetches the full campaign list with all reportable fields for CSV export;
+// intentionally omits internal IDs and timestamps not needed in reports.
 const exportCampaigns = async () => {
   const query = `
     SELECT

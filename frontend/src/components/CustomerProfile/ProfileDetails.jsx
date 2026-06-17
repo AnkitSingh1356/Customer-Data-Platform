@@ -1,3 +1,4 @@
+// Null/empty values fall back to an em-dash to keep the grid visually consistent.
 const Field = ({ label, value }) => (
   <div className="vp-field">
     <span className="vp-field-label">{label}</span>
@@ -5,6 +6,8 @@ const Field = ({ label, value }) => (
   </div>
 );
 
+// Renders the core contact/transactional fields for a customer.
+// Lifetime value is formatted as USD currency; all other fields are raw strings.
 const ProfileDetails = ({ profile }) => (
   <div className="vp-fields-grid">
     <Field label="Phone"           value={profile.phone} />

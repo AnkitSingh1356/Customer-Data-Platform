@@ -1,4 +1,3 @@
-// sidebar-app/src/pages/DealerNetwork/DealerNetworkPage.jsx
 import { useState, useMemo, useEffect } from "react";
 
 import { useDealers } from "../../components/DealerNetwork/useDealers";
@@ -31,6 +30,7 @@ const DealerNetworkPage = () => {
   const { hasPermission } = useRBAC();
   const [search, setSearch] = useState("");
 
+  // liveSearch is the debounced value passed to useDealers; search is the raw input
   const [liveSearch, setLiveSearch] = useState("");
 
   const [selectedCode, setSelectedCode] = useState(null);
@@ -58,6 +58,7 @@ const DealerNetworkPage = () => {
     refetch,
   } = useDealers(liveSearch);
 
+  // Memoized so KPI cards don't re-render on unrelated state changes (e.g. modal open)
   const kpis = useMemo(
     () => ({
       total: fmtNum(stats?.total_dealers ?? 0),

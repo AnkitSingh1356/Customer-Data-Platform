@@ -17,7 +17,7 @@
   
   .cc-header p {
     margin-top: 6px;
-    color: #6b7280;
+    color: var(--text-muted);
     font-size: 14px;
   }
   
@@ -36,7 +36,7 @@
   }
   
   .cc-primary-btn {
-    background: #0ea5e9;
+    background: var(--sky-color);
   }
   
   .cc-secondary-btn {
@@ -113,7 +113,7 @@
   
   .cc-policy-card p {
     font-size: 13px;
-    color: #6b7280;
+    color: var(--text-muted);
   }
   
   .cc-policy-badge {
@@ -153,7 +153,7 @@
   
   .cc-user-cell span {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--text-muted);
   }
   
   .consent-status-badge {
@@ -175,18 +175,18 @@
   
   .consent-status-badge.pending {
     background: #fff8db;
-    color: #0ea5e9;
+    color: var(--sky-color);
   }
   
   .consent-status-badge.none {
     background: #f3f4f6;
-    color: #6b7280;
+    color: var(--text-muted);
   }
   
   .cc-edit-btn {
     border: none;
     background: transparent;
-    color: #0ea5e9;
+    color: var(--sky-color);
     font-weight: 500;
   }
 
@@ -309,3 +309,8 @@
       0 10px 30px rgba(0,0,0,0.12);
     z-index: 9999;
   }
+
+.cc-chart-section { display: flex; flex-direction: column; gap: 8px; }
+
+.consent-badge--clickable { cursor: pointer; }
+.consent-badge--static { cursor: default; }

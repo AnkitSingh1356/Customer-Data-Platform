@@ -9,6 +9,7 @@ import LoginPage from "./pages/Auth/LoginPage";
 import SignupPage from "./pages/Auth/SignupPage";
 import UserProfileModal from "./components/UserProfile/UserProfileModal";
 import { canAccess } from "./config/personaConfig";
+import { CUSTOMER_TYPE_PORTALS } from "./config/constants";
 import DealerNetworkPage from "./pages/DealerNetwork/DealerNetworkPage";
 import BehavioralAnalyticsPage from "./pages/BehavioralAnalytics/BehavioralAnalyticsPage";
 import ConsentCompliancePage from "./pages/Compliance/ConsentCompliancePage";
@@ -18,16 +19,11 @@ import AccessManagementPage from "./pages/AccessManagement/index";
 import ReleaseNotesPage from "./pages/ReleaseNotes/ReleaseNotesPage";
 import "./styles/access-management.css";
 
-const CUSTOMER_TYPE_PORTALS = {
-  "Dealer":       { name: "Dealer Portal",       color: "#1d4ed8" },
-  "B2B Customer": { name: "B2B Customer Portal",  color: "#92400e" },
-  "B2C Customer": { name: "B2C Customer Portal",  color: "#166534" },
-  "Employee":     { name: "CDP Platform",         color: "#6d28d9" },
-};
 
 function WelcomeOverlay({ customerType, userName, onDismiss }) {
   const portal = CUSTOMER_TYPE_PORTALS[customerType] || CUSTOMER_TYPE_PORTALS["Employee"];
 
+  // Auto-dismiss after 3 s; user can also skip via the button
   useEffect(() => {
     const t = setTimeout(onDismiss, 3000);
     return () => clearTimeout(t);
@@ -55,6 +51,7 @@ function AppShell() {
   const [activeNav,       setActiveNav]       = useState("customer360");
   const [selectedPersona, setSelectedPersona] = useState(persona ?? "admin");
   const [showProfile,     setShowProfile]     = useState(false);
+  // Per-user key ensures the overlay shows once per browser session, not per page load
   const welcomeKey = `cdp_welcomed_${user?.id}`;
   const [showWelcome, setShowWelcome] = useState(() => {
     if (sessionStorage.getItem(welcomeKey)) return false;
@@ -62,11 +59,13 @@ function AppShell() {
     return true;
   });
   const welcomeKeyRef = useRef(welcomeKey);
+  // Clean up the session flag on unmount so it re-shows on next full login
   useEffect(() => {
     return () => sessionStorage.removeItem(welcomeKeyRef.current);
   }, []);
 
   const isAdmin          = user?.role === "admin";
+  // Admins can switch personas via the dropdown; non-admins are locked to their assigned persona
   const effectivePersona = isAdmin ? selectedPersona : (persona ?? "marketing");
 
   const ACCESS_DENIED = (
@@ -76,6 +75,7 @@ function AppShell() {
   );
 
 
+  // Admins bypass RBAC; all other roles must have explicit page access
   const gate = (pageKey, component) => {
     if (isAdmin) return component;
     return canAccessPage(pageKey) ? component : ACCESS_DENIED;
@@ -90,6 +90,7 @@ function AppShell() {
     if (activeNav === "identity-resolution")  return gate("identity-resolution",  <IdentityResolution />);
     if (activeNav === "segments")             return gate("segments",             <SegmentsPage persona={effectivePersona} />);
 
+    // Access Management is admin-only regardless of RBAC page grants
     if (activeNav === "access-management") {
       if (!isAdmin) return ACCESS_DENIED;
       return <AccessManagementPage />;
@@ -259,6 +260,8 @@ function AppShell() {
   );
 }
 
+// Top-level auth guard: renders the app shell when authenticated,
+// otherwise shows login or signup based on local view state
 function AuthGate() {
   const { isAuthenticated } = useAuth();
   const [authView, setAuthView] = useState("login");
@@ -272,6 +275,8 @@ function AuthGate() {
   );
 }
 
+// Provider nesting order matters: ErrorBoundary → AuthProvider → RBACProvider
+// RBACProvider reads from AuthContext, so AuthProvider must wrap it
 function App() {
   return (
     <ErrorBoundary>

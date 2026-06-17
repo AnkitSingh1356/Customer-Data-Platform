@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 
+// Modal for the currently logged-in user to view/edit their own profile
+// and change their password. Tabs keep Profile and Security concerns separate.
 const TABS = ["Profile", "Security"];
 
 const UserProfileModal = ({ onClose }) => {
@@ -15,6 +17,7 @@ const [error, setError] = useState("");
 
 const [showPwd, setShowPwd] = useState(false);
 
+// Clears the auto-dismiss timer on unmount to prevent stale state updates.
 const flashTimerRef = useRef(null);
 useEffect(() => () => { if (flashTimerRef.current) clearTimeout(flashTimerRef.current); }, []);
 
@@ -42,6 +45,7 @@ setForm((f) => ({ ...f, [k]: v }));
 const setP = (k, v) =>
 setPwd((p) => ({ ...p, [k]: v }));
 
+// Displays a success or error banner that auto-clears after 4 seconds.
 const flash = useCallback((msg, isError = false) => {
   if (isError) {
     setError(msg);
@@ -57,6 +61,7 @@ const flash = useCallback((msg, isError = false) => {
   }, 4000);
 }, []);
 
+// Prefers server-stored initials; derives from full_name as fallback.
 const initials = useMemo(() => {
 return (
 user?.avatar_initials ||
@@ -71,6 +76,7 @@ user?.avatar_initials ||
 );
 }, [user]);
 
+// Calculates profile completeness as the ratio of non-empty fields to total.
 const profileCompletion = useMemo(() => {
 const checks = [
 user?.full_name,
@@ -90,6 +96,7 @@ return Math.round((complete / checks.length) * 100);
 
 }, [user, form, avatarPreview]);
 
+// Validates avatar upload (image type, 2 MB limit) then previews via FileReader.
 const handleAvatar = (e) => {
 
   const file = e.target.files?.[0];
@@ -138,6 +145,7 @@ const handleSaveProfile = async () => {
     address: form.address || "",
     avatar_url: avatarPreview || "",
   };
+  // Bail out early if nothing actually changed to avoid unnecessary API calls.
   const hasChanges =
     JSON.stringify(currentData) !==
     JSON.stringify(newData);

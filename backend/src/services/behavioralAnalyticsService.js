@@ -1,5 +1,7 @@
 const pool = require("../config/db");
+const { BOUNCE_THRESHOLD_SECONDS, TOP_PAGES_LIMIT, ACTIVITY_DEFAULT_LIMIT, ACTIVITY_MAX_LIMIT, ANALYTICS_EXPORT_LIMIT } = require("../config/constants");
 
+// Converts a range string (e.g. "7d") to an integer number of days for SQL
 function getDateFilter(range = "30d") {
   switch (range) {
     case "7d":
@@ -12,6 +14,8 @@ function getDateFilter(range = "30d") {
       return 30;
   }
 }
+
+// Returns aggregated KPIs — sessions, avg duration, bounce rate, conversion rate
 async function getOverview({ range = "30d" }) {
   const days = getDateFilter(range);
 
@@ -29,7 +33,8 @@ async function getOverview({ range = "30d" }) {
         ROUND(
           (
             COUNT(*) FILTER (
-              WHERE session_duration < 30
+              -- Sessions under 30 s are treated as bounces
+              WHERE session_duration < ${BOUNCE_THRESHOLD_SECONDS}
             )::numeric
             / NULLIF(COUNT(*), 0)
           ) * 100,
@@ -62,6 +67,7 @@ async function getOverview({ range = "30d" }) {
   return result.rows[0];
 }
 
+// Returns daily unique-session counts for charting engagement trends over time
 async function getEngagement({ range = "30d" }) {
   const days = getDateFilter(range);
 
@@ -82,6 +88,7 @@ async function getEngagement({ range = "30d" }) {
    TOP PAGES
 ========================================================= */
 
+// Returns the five most-viewed URLs within the requested period
 async function getTopPages({ range = "30d" }) {
   const days = getDateFilter(range);
 
@@ -102,7 +109,7 @@ async function getTopPages({ range = "30d" }) {
 
     ORDER BY views DESC
 
-    LIMIT 5
+    LIMIT ${TOP_PAGES_LIMIT}
     `,
     [days]
   );
@@ -110,6 +117,7 @@ async function getTopPages({ range = "30d" }) {
   return result.rows;
 }
 
+// Aggregates event counts by traffic_source for the pie/bar chart breakdown
 async function getTrafficSources({ range = "30d" }) {
   const days = getDateFilter(range);
 
@@ -137,14 +145,16 @@ async function getTrafficSources({ range = "30d" }) {
 }
 
 
+// Returns a paginated activity feed with computed initials for avatar display
 async function getActivities({
   search = "",
   page = 1,
-  limit = 10,
+  limit = ACTIVITY_DEFAULT_LIMIT,
   range = "30d",
 }) {
   const days = getDateFilter(range);
-  const safeLimit  = Math.min(Math.max(Number(limit) || 10, 1), 500);
+  // Cap page size at 500 to prevent accidental memory-heavy responses
+  const safeLimit  = Math.min(Math.max(Number(limit) || ACTIVITY_DEFAULT_LIMIT, 1), ACTIVITY_MAX_LIMIT);
   const safePage   = Math.max(Number(page) || 1, 1);
   const offset = (safePage - 1) * safeLimit;
   limit = safeLimit;
@@ -209,6 +219,7 @@ async function getActivities({
       )
   `;
 
+  // Run data and count queries concurrently to reduce round-trip latency
   const [rows, count] = await Promise.all([
     pool.query(rowsQuery, [
       days,
@@ -240,6 +251,7 @@ async function getActivities({
 }
 
 
+// Fetches raw event rows for CSV export; capped at 50 000 rows to limit memory use
 async function exportAnalytics({
   range = "30d",
 }) {
@@ -251,7 +263,7 @@ async function exportAnalytics({
      FROM behavioral_events
      WHERE created_at >= NOW() - ($1 * INTERVAL '1 day')
      ORDER BY created_at DESC
-     LIMIT 50000`,
+     LIMIT ${ANALYTICS_EXPORT_LIMIT}`,
     [days]
   );
 

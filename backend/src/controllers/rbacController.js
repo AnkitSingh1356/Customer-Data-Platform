@@ -2,6 +2,7 @@ const svc    = require("../services/rbacService");
 const audit  = require("../services/auditService");
 const { ACTIONS } = audit;
 
+// Propagates HTTP status codes from service errors; defaults to 500
 const handleErr = (res, e) =>
   res.status(e.status || 500).json({ error: e.message || "Server error" });
 
@@ -18,6 +19,7 @@ async function getUser(req, res) {
   } catch (e) { return handleErr(res, e); }
 }
 
+// Creates a user account and emits an audit event recording the initial attributes
 async function createUser(req, res) {
   try {
     const result = await svc.createUser(req.body);
@@ -32,9 +34,11 @@ async function createUser(req, res) {
   } catch (e) { return handleErr(res, e); }
 }
 
+// Updates user fields; computes a field-level diff so the audit log only records changes
 async function updateUser(req, res) {
   try {
     const id  = parseInt(req.params.id);
+    // Snapshot before update to build a meaningful old-value audit trail
     const old = await svc.getUserById(id);
     const result = await svc.updateUser(id, req.body);
     const changed = {};
@@ -45,6 +49,7 @@ async function updateUser(req, res) {
         changed[key] = result[key];
       }
     }
+    // Skip audit write if nothing actually changed (e.g., no-op PATCH)
     if (Object.keys(changed).length) {
       audit.log({
         action:      ACTIONS.USER_UPDATED,
@@ -59,6 +64,7 @@ async function updateUser(req, res) {
   } catch (e) { return handleErr(res, e); }
 }
 
+// Flips a user's active/inactive state; audit action derived from the new state
 async function toggleUserStatus(req, res) {
   try {
     const result = await svc.toggleUserStatus(parseInt(req.params.id));
@@ -73,6 +79,7 @@ async function toggleUserStatus(req, res) {
   } catch (e) { return handleErr(res, e); }
 }
 
+// Replaces the user's role set; logs the before/after role names for access audit trail
 async function assignUserRoles(req, res) {
   try {
     const id  = parseInt(req.params.id);
@@ -115,6 +122,7 @@ async function createRole(req, res) {
   } catch (e) { return handleErr(res, e); }
 }
 
+// Updates role metadata; same diff-then-audit pattern as updateUser
 async function updateRole(req, res) {
   try {
     const id  = parseInt(req.params.id);
@@ -155,6 +163,7 @@ async function deleteRole(req, res) {
   } catch (e) { return handleErr(res, e); }
 }
 
+// Duplicates a role with all its permissions; audit records source role for traceability
 async function cloneRole(req, res) {
   try {
     const src    = await svc.getRoleById(parseInt(req.params.id));
@@ -170,6 +179,7 @@ async function cloneRole(req, res) {
   } catch (e) { return handleErr(res, e); }
 }
 
+// Replaces the full permission set for a role; old permissions logged as module:action strings
 async function setRolePermissions(req, res) {
   try {
     const id  = parseInt(req.params.id);
@@ -187,6 +197,7 @@ async function setRolePermissions(req, res) {
   } catch (e) { return handleErr(res, e); }
 }
 
+// Replaces which navigation menus a role can see; drives sidebar visibility in the UI
 async function setRoleMenus(req, res) {
   try {
     const id  = parseInt(req.params.id);
@@ -204,6 +215,7 @@ async function setRoleMenus(req, res) {
   } catch (e) { return handleErr(res, e); }
 }
 
+// Replaces which pages a role can access; drives route-level guards in the frontend
 async function setRolePages(req, res) {
   try {
     const id  = parseInt(req.params.id);
@@ -271,11 +283,13 @@ async function listPages(req, res) {
 }
 
 // ─── Current User Access ──────────────────────────────────────
+// Returns the calling user's own roles, permissions, menus, and pages in one payload
 async function myAccess(req, res) {
   try { return res.json(await svc.getUserAccess(req.user.id)); }
   catch (e) { return handleErr(res, e); }
 }
 
+// Returns a specific user's access summary; used by admins auditing a user's permissions
 async function getUserAccessSummary(req, res) {
   try { return res.json(await svc.getUserAccessSummary(parseInt(req.params.id))); }
   catch (e) { return handleErr(res, e); }

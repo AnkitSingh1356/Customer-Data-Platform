@@ -44,11 +44,14 @@ const IdentityResolution = () => {
       limit: 10,
     });
 
+  // Dashboard KPIs and match rules load once on mount; they are refreshed
+  // after any toggle or merge action to reflect the updated counts
   useEffect(() => {
     loadDashboard();
     loadRules();
   }, []);
 
+  // Match queue refetches whenever page, search term, or page size changes
   useEffect(() => {
     loadMatches();
   }, [page, search, pagination.limit]);
@@ -137,6 +140,7 @@ const IdentityResolution = () => {
       }
     };
 
+  // Only rows without a prior action are eligible; already-actioned rows are skipped
   const handleBulkMerge =
     async (selectedRows) => {
       try {

@@ -1,8 +1,11 @@
+// Permission matrix editor — assigns granular CRUD+export+import permissions
+// to a role across all active modules via a checkbox grid.
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
 import { useToast } from "../../hooks/useToast";
 
+// Column headers for the permission matrix; must match backend action enum values.
 const STANDARD_ACTIONS = ["create", "read", "update", "delete", "export", "import"];
 
 export default function PermissionManagement() {
@@ -46,7 +49,7 @@ export default function PermissionManagement() {
     load();
   }, [selectedRole, authHeader, showToast]);
 
-  // Current checked permission ids as a Set
+  // Separate state so the matrix rerenders independently of roleData fetch.
   const [checkedIds, setCheckedIds] = useState(new Set());
 
   useEffect(() => {
@@ -56,7 +59,8 @@ export default function PermissionManagement() {
     }
   }, [roleData]);
 
-  // Group permissions by module
+  // Build a module→action lookup for rendering the matrix;
+  // sorted by module sort_order to match the navigation hierarchy.
   const byModule = useMemo(() => {
     const map = {};
     permissions.forEach((p) => {
@@ -77,6 +81,7 @@ export default function PermissionManagement() {
     setDirty(true);
   };
 
+  // Row header checkbox: grants/revokes all actions for a single module at once.
   const toggleRow = (moduleKey) => {
     const modulePerms = permissions.filter((p) => p.module_key === moduleKey);
     const allChecked  = modulePerms.every((p) => checkedIds.has(p.id));
@@ -88,6 +93,7 @@ export default function PermissionManagement() {
     setDirty(true);
   };
 
+  // Column header button: grants/revokes one action (e.g. "delete") across all modules.
   const toggleColumn = (action) => {
     const actionPerms = permissions.filter((p) => p.action === action);
     const allChecked  = actionPerms.every((p) => checkedIds.has(p.id));

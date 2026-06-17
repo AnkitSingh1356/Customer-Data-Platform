@@ -81,15 +81,17 @@ const [limit, setLimit] = useState(5);
   const totalMembers    = fmtNum(stats?.total_members    ?? 0);
   const avgSegmentSize  = fmtNum(stats?.avg_segment_size ?? 0);
 
+  // Segments are filtered server-side but paginated client-side from the full result set
   const paginatedSegments = useMemo(() => {
     const start = (page - 1) * limit;
     const end = start + limit;
-  
+
     return segments.slice(start, end);
   }, [segments, page, limit]);
-  
+
   const totalPages = Math.ceil(segments.length / limit) || 1;
-   
+
+  // Clamp the current page when filters shrink the total available pages
   useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages);

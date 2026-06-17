@@ -1,7 +1,8 @@
-//cdp-backend\src\services\dealerService.js
 const pool = require("../config/db");
 const csv = require("csv-parser");
 const fs = require("fs");
+// Returns network-wide aggregate stats: dealer counts by type plus
+// total contacts and combined annual revenue across all dealers.
 async function getStats() {
   const res = await pool.query(`
     SELECT
@@ -15,6 +16,9 @@ async function getStats() {
   return res.rows[0];
 }
 
+// Builds a two-level dealer tree: HQ nodes with their branch children nested.
+// When search is provided, only HQs matching the term are returned (along with
+// all their branches), so the caller always gets complete subtrees.
 async function getHierarchy(search = "") {
   // NOTE: alias `d` is used in whereHQ, so the main HQ query must alias the table as `d`.
   let whereHQ = "WHERE d.parent_code IS NULL";
@@ -72,7 +76,8 @@ async function getDealerDetail(code) {
   if (!dealerRes.rows.length) return null;
   const dealer = dealerRes.rows[0];
 
-  // Related dealers: parent + siblings
+  // Resolve related dealers: the dealer's own parent (HQ), direct children,
+  // and siblings (branches sharing the same parent), labelled by relation type.
   const relatedRes = await pool.query(
     `SELECT d.name, d.code, d.city, d.region, d.tier,
             CASE
@@ -129,6 +134,8 @@ async function createAccessRequest(code, targetUuid) {
   return res.rows[0];
 }
 
+// Guard against CSV injection: prefix cells that would be interpreted as
+// spreadsheet formulas with a leading single-quote to neutralise them.
 const DEALER_FORMULA_RE = /^[=+\-@\t\r]/;
 function sanitizeDealerCell(v) {
   return typeof v === "string" && DEALER_FORMULA_RE.test(v) ? "'" + v : v;
@@ -136,6 +143,9 @@ function sanitizeDealerCell(v) {
 
 const MAX_DEALER_ROWS = parseInt(process.env.MAX_ROWS_PER_UPLOAD || "10000");
 
+// Parses a CSV file, validates required fields, and upserts each row by dealer
+// code. Existing records are updated with non-null incoming values only (COALESCE
+// preserves current data when a CSV field is blank). Returns insert/fail counts.
 async function bulkUpload(filePath) {
   const rows = [];
   const parseErrors = [];

@@ -1,6 +1,8 @@
 const pool = require("../config/db");
 
 
+// Assembles a full customer profile from four separate tables and returns a
+// single merged object. Returns null when the CDP ID does not exist.
 async function getCustomerProfile(cdpId) {
   const custRes = await pool.query(
     `SELECT
@@ -30,6 +32,8 @@ async function getCustomerProfile(cdpId) {
     [customer.id]
   );
 
+  // Only surface unresolved issues; severity ordering ensures HIGH issues
+  // appear first regardless of insertion order.
   const issueRes = await pool.query(
     `SELECT title, description, severity
      FROM data_quality_issues
@@ -56,6 +60,8 @@ async function getCustomerProfile(cdpId) {
 }
 
 
+// Attaches an arbitrary key-value attribute to a customer profile, defaulting
+// to the "Behavioral" type when none is supplied.
 async function addFlexibleAttribute(cdpId, { attr_type, attr_key, attr_value }) {
   const custRes = await pool.query(
     "SELECT id FROM customers WHERE cdp_id = $1", [cdpId]
@@ -71,6 +77,8 @@ async function addFlexibleAttribute(cdpId, { attr_type, attr_key, attr_value }) 
   return res.rows[0];
 }
 
+// Returns the mean lifetime value across all customers with a positive LTV,
+// excluding zero-value records to avoid deflating the benchmark figure.
 async function getAvgLifetimeValue() {
   const res = await pool.query(
     `SELECT COALESCE(ROUND(AVG(lifetime_value)::numeric, 2), 0) AS avg_ltv

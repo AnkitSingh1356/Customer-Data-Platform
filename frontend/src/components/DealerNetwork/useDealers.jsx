@@ -3,12 +3,14 @@ import apiFetch from "../../services/apiFetch";
 
 const BASE = `${import.meta.env.VITE_API_BASE_URL}/api/dealers`;
 
+// Manages dealer list + aggregate stats; refetches whenever search changes
 export function useDealers(search = "") {
   const [dealers,  setDealers]  = useState([]);
   const [stats,    setStats]    = useState(null);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState("");
 
+  // Fetches dealer list and network-wide stats in parallel
   const fetch_ = useCallback(async () => {
     setLoading(true); setError("");
     try {
@@ -30,6 +32,7 @@ export function useDealers(search = "") {
   return { dealers, stats, loading, error, refetch: fetch_ };
 }
 
+// Fetches full dealer detail including related dealers, reps, and access requests
 export async function fetchDealerDetail(code) {
   const res  = await apiFetch(`${BASE}/${code}`);
   const data = await res.json();
@@ -37,6 +40,7 @@ export async function fetchDealerDetail(code) {
   return data;
 }
 
+// POSTs a stewardship access request for the given dealer to a target user UUID
 export async function submitAccessRequest(code, target_uuid) {
   const res  = await apiFetch(`${BASE}/${code}/access`, {
     method:  "POST",

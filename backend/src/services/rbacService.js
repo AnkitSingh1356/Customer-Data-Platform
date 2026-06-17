@@ -1,13 +1,14 @@
 const pool       = require("../config/db");
 const bcrypt     = require("bcryptjs");
-const SALT_ROUNDS = 12;
+const { SALT_ROUNDS, DEFAULT_PAGE_LIMIT, DEFAULT_ROLES_LIMIT, STANDARD_PERMISSION_ACTIONS } = require("../config/constants");
 
 function err(msg, status = 400) {
   return Object.assign(new Error(msg), { status });
 }
 
 
-async function getUsers({ page = 1, limit = 20, search = "", customer_type = "" } = {}) {
+// Returns paginated users with their assigned RBAC roles aggregated as JSON.
+async function getUsers({ page = 1, limit = DEFAULT_PAGE_LIMIT, search = "", customer_type = "" } = {}) {
   const offset = (Number(page) - 1) * Number(limit);
   const params = [];
   const conditions = [];
@@ -149,10 +150,13 @@ async function toggleUserStatus(id) {
   return res.rows[0];
 }
 
+// Replaces a user's role assignments atomically: existing roles are cleared
+// before the new set is inserted to keep the mapping in sync.
 async function assignUserRoles(userId, roleIds = []) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // Full replace: delete all current roles before inserting the new set
     await client.query("DELETE FROM user_roles WHERE user_id = $1", [userId]);
     if (roleIds.length) {
       const vals = roleIds.map((_, i) => `($1, $${i + 2})`).join(", ");
@@ -173,7 +177,7 @@ async function assignUserRoles(userId, roleIds = []) {
 
 // ─── Role Management ────────────────────────────────────────────
 
-async function getRoles({ page = 1, limit = 50, search = "" } = {}) {
+async function getRoles({ page = 1, limit = DEFAULT_ROLES_LIMIT, search = "" } = {}) {
   const offset = (Number(page) - 1) * Number(limit);
   const params = [];
   let where = "";
@@ -207,6 +211,8 @@ async function getRoles({ page = 1, limit = 50, search = "" } = {}) {
   };
 }
 
+// Returns a role with its full permission, menu, and page assignments resolved.
+// Permissions are joined through rbac_modules so callers get module context.
 async function getRoleById(id) {
   const res = await pool.query(
     `SELECT r.*,
@@ -217,6 +223,7 @@ async function getRoleById(id) {
   if (!res.rows.length) throw err("Role not found.", 404);
   const role = res.rows[0];
 
+  // Fetch permissions, menus, and page grants in parallel to reduce latency
   const [perms, menus, pages] = await Promise.all([
     pool.query(
       `SELECT p.id, p.action, m.key AS module_key, m.label AS module_label
@@ -275,6 +282,8 @@ async function updateRole(id, { name, description, is_active }) {
   return res.rows[0];
 }
 
+// Deletes a role only if it is not assigned to any users. Uses FOR UPDATE to
+// lock the check and delete in one transaction, preventing a TOCTOU race.
 async function deleteRole(id) {
   const client = await pool.connect();
   try {
@@ -298,6 +307,9 @@ async function deleteRole(id) {
   }
 }
 
+// Duplicates a role and copies all its permission, menu, and page grants
+// atomically. The clone is created with an optional custom name or defaults
+// to "<source name> (Copy)".
 async function cloneRole(id, newName) {
   const src = await getRoleById(id);
   const client = await pool.connect();
@@ -333,6 +345,8 @@ async function cloneRole(id, newName) {
   }
 }
 
+// Generic helper: replaces all rows in a role-relation join table (permissions,
+// menus, or pages) for a given role in a single transaction.
 async function setRoleRelations(roleId, ids, table, col) {
   const client = await pool.connect();
   try {
@@ -380,6 +394,8 @@ async function getModules() {
   return res.rows;
 }
 
+// Creates a module and auto-provisions the standard CRUD + export/import
+// permissions for it so new modules are immediately usable in role assignments.
 async function createModule({ key, label, icon, sort_order = 0 }) {
   if (!key?.trim() || !label?.trim()) throw err("key and label are required.");
   const res = await pool.query(
@@ -388,7 +404,8 @@ async function createModule({ key, label, icon, sort_order = 0 }) {
     [key.trim(), label.trim(), icon || null, sort_order]
   );
   const mod = res.rows[0];
-  const actions = ["create", "read", "update", "delete", "export", "import"];
+  // Seed all standard actions so callers can assign fine-grained permissions immediately
+  const actions = STANDARD_PERMISSION_ACTIONS;
   await Promise.all(
     actions.map((action) =>
       pool.query(
@@ -485,6 +502,9 @@ async function getPages() {
   );
   return res.rows;
 }
+// Resolves the effective permissions, menus, and pages for a user.
+// Admins receive all active permissions unconditionally; other users receive
+// only what is granted through their assigned RBAC roles.
 async function getUserAccess(userId) {
   const userRes = await pool.query(
     "SELECT role, customer_type FROM users WHERE id = $1",
@@ -494,6 +514,7 @@ async function getUserAccess(userId) {
 
   const { role, customer_type } = userRes.rows[0];
 
+  // Admin bypass: skip role lookups and grant access to every active resource
   if (role === "admin") {
     const [perms, menus, pages] = await Promise.all([
       pool.query(
@@ -557,6 +578,9 @@ async function getUserAccess(userId) {
   };
 }
 
+// Builds a detailed access summary for the user-detail view: combines user
+// info, effective access, all available resources, restricted resource lists,
+// per-role permission sources (for non-admins), and an audit change count.
 async function getUserAccessSummary(userId) {
   const userRes = await pool.query(
     `SELECT u.id, u.full_name, u.email, u.role, u.customer_type,
@@ -590,6 +614,8 @@ async function getUserAccessSummary(userId) {
     ),
   ]);
 
+  // permissionSources traces each permission back to the role that granted it,
+  // enabling the UI to explain why a user has a given access right.
   let permissionSources = [];
   if (!access.is_admin) {
     const srcRes = await pool.query(
@@ -607,6 +633,7 @@ async function getUserAccessSummary(userId) {
     permissionSources = srcRes.rows;
   }
 
+  // Derive restricted lists by diffing all active resources against granted ones
   const accessibleModuleKeys = new Set(access.permissions.map((p) => p.module_key));
   const accessiblePageKeys   = new Set(access.pages.map((p) => p.key));
 

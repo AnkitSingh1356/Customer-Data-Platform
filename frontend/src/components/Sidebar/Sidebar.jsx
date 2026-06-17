@@ -5,6 +5,7 @@ import { useRBAC } from "../../auth/RBACContext";
 
 const Sidebar = ({ persona = "admin", activeId, onNavClick }) => {
   const { canAccessMenu } = useRBAC();
+  // Supports both controlled (activeId prop) and uncontrolled active-item modes.
   const [internalActive, setInternalActive] = useState("dashboard");
   const currentActive = activeId ?? internalActive;
   const handleClick = (id) => {
@@ -12,6 +13,8 @@ const Sidebar = ({ persona = "admin", activeId, onNavClick }) => {
     onNavClick?.(id);
   };
 
+  // Admins receive a curated persona-specific list; all other roles go through
+  // RBAC permission filtering so only accessible items are rendered.
   const isAdmin = persona === "admin";
   const items = isAdmin
     ? (navItemsByPersona[persona] ?? navItemsByPersona.admin)

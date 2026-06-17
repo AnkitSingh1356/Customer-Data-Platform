@@ -36,6 +36,7 @@ const COLORS = ["#0EA5E9", "#14B8A6", "#22C55E", "#F97316"];
 
 function BehavioralAnalyticsPage() {
   const { hasPermission } = useRBAC();
+  // range drives all dashboard fetches; changing it also resets the activity page to 1
   const [range, setRange] = useState("30d");
 
   const [overview, setOverview] = useState(null);
@@ -62,6 +63,7 @@ function BehavioralAnalyticsPage() {
 
   const [totalPages, setTotalPages] = useState(1);
 
+  // 400 ms debounce prevents activity refetch on every keystroke
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -70,7 +72,7 @@ function BehavioralAnalyticsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-
+  // Reset to page 1 when the date range changes so results stay coherent
   useEffect(() => {
     setPage(1);
   }, [range]);
@@ -91,6 +93,8 @@ function BehavioralAnalyticsPage() {
 
       setOverview(overviewData);
 
+      // Slice raw engagement rows to match the selected range and attach
+      // human-readable labels (weekday / day number / month+day) for the X axis
       const transformedEngagement = (() => {
         const raw = engagementData || [];
 
@@ -166,6 +170,7 @@ function BehavioralAnalyticsPage() {
     }
   }, [range]);
 
+  // Activities are fetched separately so search/pagination doesn't reload charts
   const loadActivities = useCallback(async () => {
     try {
       const data = await fetchActivities({
@@ -228,6 +233,7 @@ function BehavioralAnalyticsPage() {
 
       document.body.removeChild(a);
 
+      // Defer revocation to ensure the browser has started the download
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
       }, 100);

@@ -1,3 +1,4 @@
+// Lightweight success toast; visibility is controlled externally via the visible prop.
 const Toast = ({
     message,
     visible,

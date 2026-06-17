@@ -1,4 +1,4 @@
-//cdp-bulk-upload\sidebar-app\src\components\DealerNetwork\dealerUtils.jsx
+// Abbreviates revenue for compact display (e.g. $2.3M, $450k)
 export function fmtRevenue(n) {
   const v = Number(n ?? 0);
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
@@ -6,11 +6,13 @@ export function fmtRevenue(n) {
   return `$${v.toLocaleString()}`;
 }
 
+// Formats revenue as a full locale string for table cells (e.g. $1,234,567)
 export function fmtRevenueTable(n) {
   const v = Number(n ?? 0);
   return `$${v.toLocaleString()}`;
 }
 
+// Returns a locale-formatted integer string, treating null/undefined as 0
 export function fmtNum(n) {
   return Number(n ?? 0).toLocaleString();
 }

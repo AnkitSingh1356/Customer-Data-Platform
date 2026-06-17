@@ -4,6 +4,7 @@ import { rbacApi } from "../services/rbacService";
 
 const RBACContext = createContext(null);
 
+// Safe default used before the API responds or when the user is logged out
 const EMPTY_ACCESS = {
   permissions:   [],
   menus:         [],
@@ -30,14 +31,16 @@ export function RBACProvider({ children }) {
     }
   }, [isAuthenticated, authHeader]);
 
+  // Fetch permissions on login; reset to safe defaults on logout
   useEffect(() => {
     if (isAuthenticated) {
       refresh();
     } else {
       setAccess(EMPTY_ACCESS);
     }
-  }, [isAuthenticated]); 
+  }, [isAuthenticated]);
 
+  // Flattens permissions into a "module_key:action" Set for O(1) lookup
   const permSet = useMemo(() => {
     const s = new Set();
     access.permissions.forEach((p) => s.add(`${p.module_key}:${p.action}`));
@@ -54,16 +57,19 @@ export function RBACProvider({ children }) {
     [access.pages]
   );
 
+  // Admins bypass all permission checks; others must have an explicit grant
   const hasPermission = useCallback(
     (moduleKey, action) => access.is_admin || permSet.has(`${moduleKey}:${action}`),
     [access.is_admin, permSet]
   );
 
+  // Admins see all menus; others require the menu key in their assigned set
   const canAccessMenu = useCallback(
     (menuKey) => access.is_admin || menuSet.has(menuKey),
     [access.is_admin, menuSet]
   );
 
+  // Admins can visit any page; others require the page key in their assigned set
   const canAccessPage = useCallback(
     (pageKey) => access.is_admin || pageSet.has(pageKey),
     [access.is_admin, pageSet]

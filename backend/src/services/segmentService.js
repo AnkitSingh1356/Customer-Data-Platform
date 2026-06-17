@@ -1,5 +1,7 @@
 const pool = require("../config/db");
 
+// Normalises raw DB rows: ensures rules is always an array, coerces
+// member_count to a number, and formats created_at for display.
 const fmt = (rows) =>
   rows.map((r) => ({
     ...r,
@@ -57,6 +59,8 @@ async function getSegment(id) {
   return res.rows.length ? fmt(res.rows)[0] : null;
 }
 
+// Persists a new segment with its filter rules serialised as JSONB.
+// match_type controls whether rules are evaluated with AND ("all") or OR ("any").
 async function createSegment({ name, description, status, activity_window, match_type, rules }) {
   const res = await pool.query(
     `INSERT INTO segments (name, description, status, activity_window, match_type, rules)

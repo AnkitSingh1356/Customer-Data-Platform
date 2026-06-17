@@ -1,6 +1,8 @@
 const BASE       = `${import.meta.env.VITE_API_BASE_URL}/api/rbac`;
 const AUDIT_BASE = `${import.meta.env.VITE_API_BASE_URL}/api/audit`;
 
+// Internal helper — sends a raw fetch request with JSON headers and the caller-
+// supplied auth headers, then throws a descriptive error on non-ok responses
 async function request(endpoint, options = {}, authHeaders = {}) {
   const res = await fetch(`${BASE}${endpoint}`, {
     headers: { "Content-Type": "application/json", ...authHeaders },
@@ -11,6 +13,8 @@ async function request(endpoint, options = {}, authHeaders = {}) {
   return data;
 }
 
+// Builds a query string from params, omitting undefined/null/empty values to
+// keep URLs clean when filters are not applied
 function qs(params = {}) {
   const clean = Object.fromEntries(
     Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "")
@@ -18,7 +22,10 @@ function qs(params = {}) {
   return new URLSearchParams(clean).toString();
 }
 
+// rbacApi — all methods accept an auth header object as the last argument (h)
+// so callers can pass authHeader() from AuthContext directly
 export const rbacApi = {
+  // GET /rbac/my-access — returns the current user's permissions, menus, and pages
   getMyAccess: (h) => request("/my-access", {}, h),
 
   getUsers:         (params, h) => request(`/users?${qs(params)}`, {}, h),
@@ -54,6 +61,7 @@ export const rbacApi = {
   getUserAccessSummary: (id, h) => request(`/users/${id}/summary`, {}, h),
 };
 
+// Separate helper for the audit endpoint — kept isolated from rbac base URL
 async function auditRequest(endpoint, options = {}, authHeaders = {}) {
   const res = await fetch(`${AUDIT_BASE}${endpoint}`, {
     headers: { "Content-Type": "application/json", ...authHeaders },
@@ -65,5 +73,6 @@ async function auditRequest(endpoint, options = {}, authHeaders = {}) {
 }
 
 export const auditApi = {
+  // GET /audit/?<params> — returns paginated system audit log entries
   getLogs: (params, h) => auditRequest(`/?${qs(params)}`, {}, h),
 };

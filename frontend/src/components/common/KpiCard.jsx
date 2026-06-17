@@ -1,4 +1,5 @@
-//cdp-bulk-upload\sidebar-app\src\components\common\KpiCard.jsx
+// Displays a single KPI metric with optional icon, trend indicator, and subtitle.
+// trendType ("up" | "down") drives CSS class for green/red colouring.
 const KpiCard = ({
     icon,
     label,

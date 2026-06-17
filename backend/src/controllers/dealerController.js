@@ -1,11 +1,12 @@
-//cdp-backend\src\controllers\dealerController.js
 const svc = require("../services/dealerService");
 const fs = require("fs");
+// Centralised error handler; propagates HTTP status from service-thrown errors
 const err = (res, e, msg = "Server error", context = "") => {
   console.error("[DealerController]", context, e);
   return res.status(e?.status || 500).json({ error: e?.message || msg });
 };
 
+// Returns aggregate dealer metrics (counts by tier, region, status)
 async function stats(req, res) {
   try {
     return res.json(await svc.getStats());
@@ -14,6 +15,7 @@ async function stats(req, res) {
   }
 }
 
+// Returns the parent-child dealer tree, optionally filtered by search term
 async function hierarchy(req, res) {
   try {
     return res.json(await svc.getHierarchy(req.query.search || ""));
@@ -32,6 +34,7 @@ async function detail(req, res) {
   }
 }
 
+// Submits a request for a user (target_uuid) to gain access to a specific dealer
 async function requestAccess(req, res) {
   try {
     const r = await svc.createAccessRequest(
@@ -43,6 +46,7 @@ async function requestAccess(req, res) {
     return err(res, e);
   }
 }
+// Serves a pre-filled CSV template so importers know the expected column schema
 async function template(req, res) {
   try {
     const csv =
@@ -62,6 +66,7 @@ Dealer HQ,DLR-HQ-1,,HQ,gold,APAC,Tokyo,JP,test@test.com,9999999999,Active`;
     return err(res, e);
   }
 }
+// Processes an uploaded CSV to create or update dealers in bulk
 async function bulkUpload(req, res) {
   try {
     if (!req.file) {

@@ -1,12 +1,16 @@
+// Derives up to two uppercase initials from the customer's full name.
 const getInitials = (name = "") =>
   name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
+// Maps a 0-100 quality score to a traffic-light color (green/amber/red).
 const qualityColor = (score) => {
   if (score >= 80) return "#22c55e";
   if (score >= 50) return "#f59e0b";
   return "#ef4444";
 };
 
+// Displays the customer's avatar, name, email, CDP ID, quality score,
+// data owner, and primary source — the identity summary row of the modal.
 const ProfileHeader = ({ profile, onClose }) => (
   <>
     <div className="vp-header">

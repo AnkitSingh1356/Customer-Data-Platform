@@ -49,7 +49,7 @@
   }
   
   .promo-export-btn {
-    background: #0ea5e9;
+    background: var(--sky-color);
     color: white;
     border: none;
     border-radius: 8px;
@@ -82,7 +82,7 @@
   .promo-view-btn {
     background: transparent;
     border: none;
-    color: #0ea5e9;
+    color: var(--sky-color);
   }
   
   .promo-modal {

@@ -1,4 +1,5 @@
-//cdp-bulk-upload\sidebar-app\src\components\common\Pagination.jsx
+// Stateless pagination bar. Callers own page/limit state and react to
+// onPageChange / onLimitChange callbacks to re-fetch their data.
 const Pagination = ({
     page,
     totalPages,

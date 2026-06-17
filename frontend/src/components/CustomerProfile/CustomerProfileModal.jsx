@@ -6,6 +6,8 @@ import apiFetch from "../../services/apiFetch";
 
 const API = `${import.meta.env.VITE_API_BASE_URL}/api/customers`;
 
+// Orchestrates the full customer profile view: fetches data by cdpId and
+// composes ProfileHeader, ProfileDetails, and ProfileSections into a modal.
 const CustomerProfileModal = ({ cdpId, onClose }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +30,7 @@ const CustomerProfileModal = ({ cdpId, onClose }) => {
 
   useEffect(() => { fetchProfile(); }, [cdpId]);
 
+  // Re-fetches the full profile after a successful attribute write to stay in sync.
   const handleAddAttribute = async (payload) => {
     try {
       const res = await apiFetch(`${API}/${cdpId}/attributes`, {
