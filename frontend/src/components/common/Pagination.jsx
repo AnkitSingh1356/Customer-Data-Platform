@@ -1,15 +1,5 @@
-/**
- * Stateless pagination bar with a rows-per-page selector and previous/next navigation.
- * Usage: Place below a data table; the parent owns page/limit state and re-fetches data in the callbacks.
- * @param {Object} props
- * @param {number} props.page - Current page number (1-based)
- * @param {number} props.totalPages - Total number of pages
- * @param {number} props.limit - Current rows-per-page value
- * @param {function} props.onPageChange - Callback invoked with the new page number
- * @param {function} props.onLimitChange - Callback invoked with the new limit value
- * @param {number[]} [props.limitOptions=[5, 10, 20, 50]] - Available rows-per-page options
- * @returns {JSX.Element}
- */
+import SelectDropdown from "./SelectDropdown";
+
 const Pagination = ({
     page,
     totalPages,
@@ -22,20 +12,13 @@ const Pagination = ({
         <div className="app-pagination">
           <div className="pagination-left">
             <span className="pagination-label">Rows per page</span>
-      
-            <select
-              value={limit}
-              onChange={(e) => onLimitChange(Number(e.target.value))}
-              className="pagination-select"
-            >
-              {[5, 10, 20, 50].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
+            <SelectDropdown
+              value={String(limit)}
+              onChange={(val) => onLimitChange(Number(val))}
+              options={limitOptions.map((size) => ({ value: String(size), label: String(size) }))}
+            />
           </div>
-      
+
           <div className="pagination-right">
             <button
               className="pagination-btn"
@@ -44,11 +27,11 @@ const Pagination = ({
             >
               Previous
             </button>
-      
+
             <span className="pagination-page">
               Page {page} of {totalPages}
             </span>
-      
+
             <button
               className="pagination-btn"
               disabled={page === totalPages}

@@ -10,16 +10,17 @@ const CampaignDetailsModal = ({
     return (
       <div className="modal-backdrop">
         <div className="promo-modal">
-          <button
-            className="promo-close-btn"
-            onClick={onClose}
-          >
-            ✕
-          </button>
-
-          <h2>
-            {campaign.campaign_name}
-          </h2>
+          <div className="promo-modal-header">
+            <h2>
+              {campaign.campaign_name}
+            </h2>
+            <button
+              className="promo-close-btn"
+              onClick={onClose}
+            >
+              ✕
+            </button>
+          </div>
 
           <div className="promo-modal-grid">
             <div>

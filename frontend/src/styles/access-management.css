@@ -170,13 +170,15 @@
   background: #fff;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .am-table-wrap--scroll { overflow-y: auto; max-height: 400px; }
 
 .am-table {
   width: 100%;
+  min-width: 540px;
   border-collapse: collapse;
   font-size: 0.82rem;
 }
@@ -523,11 +525,13 @@
   background: #fff;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  overflow: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .am-matrix-table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
   font-size: 0.8rem;
 }
@@ -737,6 +741,41 @@
   .am-form-row { flex-direction: column; }
   .am-page-access-grid { grid-template-columns: 1fr; }
   .am-search { width: 100%; }
+
+  /* Tabs — horizontal scroll so they don't wrap awkwardly */
+  .am-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+  .am-tabs::-webkit-scrollbar { display: none; }
+  .am-tab { white-space: nowrap; flex-shrink: 0; }
+
+  /* Toolbar — stack on narrow viewports */
+  .am-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .am-toolbar-left { flex-wrap: wrap; }
+
+  /* Audit trail filter row — full-width inputs on mobile */
+  .am-filter-row { flex-direction: column; gap: 8px; }
+  .am-filter-row .am-search,
+  .am-filter-row .am-filter-select,
+  .am-filter-row input[type="date"] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .am-toolbar > .am-btn { width: 100%; justify-content: center; }
+
+  /* Force always-visible scrollbar on mobile */
+  .am-table-wrap  { overflow-x: scroll; }
+  .am-matrix-wrap { overflow-x: scroll; }
+
+  /* Buttons that should stretch on mobile */
+  .am-btn--full-mobile { width: 100%; justify-content: center; }
+
+  /* Action buttons — wrap on small screens */
+  .am-action-btns { flex-wrap: wrap; }
 }
 
 /* ── XL Modal ──────────────────────────────────────────────── */
@@ -1109,7 +1148,7 @@
 
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .am-modal--xl { max-width: 100%; max-height: 100vh; border-radius: 0; }
+  .am-modal--xl { max-width: calc(100% - 32px); max-height: calc(100dvh - 48px); border-radius: 12px; }
   .uas-stats-row { flex-wrap: wrap; }
   .uas-stat-card { min-width: 30%; }
   .uas-customer-type-grid { grid-template-columns: repeat(2, 1fr); }

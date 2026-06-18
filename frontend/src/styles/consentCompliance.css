@@ -314,3 +314,106 @@
 
 .consent-badge--clickable { cursor: pointer; }
 .consent-badge--static { cursor: default; }
+
+/* ── CC modal — ensure it never overflows viewport ────── */
+.cc-modal {
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+══════════════════════════════════════════════════════ */
+
+/* Tablet (769–1199px) */
+@media (min-width: 769px) and (max-width: 1199px) {
+  .cc-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cc-grid {
+    grid-template-columns: 1fr;
+  }
+  .cc-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile (≤ 768px) */
+@media (max-width: 768px) {
+  .cc-page {
+    padding: 16px;
+  }
+  .cc-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .cc-header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .cc-primary-btn,
+  .cc-secondary-btn {
+    width: 100%;
+  }
+  .cc-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .cc-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .cc-chart-wrap {
+    height: 260px;
+  }
+  .cc-table-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .cc-table-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .cc-table-actions input,
+  .cc-table-actions select {
+    width: 100%;
+  }
+  .cc-modal {
+    width: calc(100% - 32px);
+    max-width: 540px;
+    max-height: calc(100dvh - 48px);
+    border-radius: 12px;
+    padding: 20px 16px;
+  }
+  .cc-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .cc-consent-edit-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .cc-grant-btn,
+  .cc-revoke-btn {
+    width: 100%;
+    text-align: center;
+  }
+  .cc-chart-legend {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+/* Small mobile (≤ 480px) */
+@media (max-width: 480px) {
+  .cc-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .cc-policy-card {
+    flex-direction: column;
+    gap: 10px;
+  }
+}

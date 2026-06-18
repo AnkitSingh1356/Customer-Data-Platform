@@ -51,6 +51,7 @@ function AppShell() {
   const [activeNav,       setActiveNav]       = useState("customer360");
   const [selectedPersona, setSelectedPersona] = useState(persona ?? "admin");
   const [showProfile,     setShowProfile]     = useState(false);
+  const [sidebarOpen,     setSidebarOpen]     = useState(false);
   // Per-user key ensures the overlay shows once per browser session, not per page load
   const welcomeKey = `cdp_welcomed_${user?.id}`;
   const [showWelcome, setShowWelcome] = useState(() => {
@@ -125,14 +126,21 @@ function AppShell() {
       )}
 
       <div className="app-layout">
+        {sidebarOpen && (
+          <div
+            className="sidebar-overlay sidebar-overlay--visible"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
         <Sidebar
           persona={effectivePersona}
           activeId={activeNav}
-          onNavClick={setActiveNav}
+          isOpen={sidebarOpen}
+          onNavClick={(id) => { setActiveNav(id); setSidebarOpen(false); }}
         />
         <div className="app-content">
           <header className="app-topbar">
-            <button className="topbar-menu-icon">
+            <button className="topbar-menu-icon" onClick={() => setSidebarOpen(o => !o)} aria-label="Toggle navigation">
               <svg
                 width="18"
                 height="18"

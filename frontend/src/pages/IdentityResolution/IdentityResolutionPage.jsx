@@ -74,7 +74,12 @@ const IdentityResolution = () => {
         const data =
           await getIdentityRules();
 
-        setRules(data);
+        const seen = new Set();
+        setRules((data || []).filter(r => {
+          if (seen.has(r.rule_name)) return false;
+          seen.add(r.rule_name);
+          return true;
+        }));
       } catch (error) {
         console.error(error);
       }
