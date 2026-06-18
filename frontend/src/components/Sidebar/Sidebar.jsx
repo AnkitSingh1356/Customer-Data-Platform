@@ -13,7 +13,7 @@ import { useRBAC } from "../../auth/RBACContext";
  * @param {function} [props.onNavClick] - Optional callback invoked with the clicked item ID
  * @returns {JSX.Element}
  */
-const Sidebar = ({ persona = "admin", activeId, onNavClick }) => {
+const Sidebar = ({ persona = "admin", activeId, isOpen = false, onNavClick }) => {
   const { canAccessMenu } = useRBAC();
   // Supports both controlled (activeId prop) and uncontrolled active-item modes.
   const [internalActive, setInternalActive] = useState("dashboard");
@@ -31,7 +31,7 @@ const Sidebar = ({ persona = "admin", activeId, onNavClick }) => {
     : allNavItems.filter((item) => canAccessMenu(item.id));
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${isOpen ? " sidebar--open" : ""}`}>
       <div className="sidebar-logo">
         <div className="sidebar-logo-dunlop">
           <svg width="60" height="16" viewBox="0 0 120 30" fill="white">

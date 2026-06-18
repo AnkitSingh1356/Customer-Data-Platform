@@ -111,6 +111,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
         </div>
       </div>
 
+      <div className="ir-table-scroll">
       <table className="identity-table">
         <thead>
           <tr>
@@ -215,6 +216,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 };
