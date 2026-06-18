@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 
+// Auto-dismissing notification banner; calls onDismiss after 3.5 seconds
 const Toast = ({ message, type = "success", onDismiss }) => {
+  // Timer is cleared on unmount to prevent state updates on an unmounted component
   useEffect(() => {
     const t = setTimeout(onDismiss, 3500);
     return () => clearTimeout(t);

@@ -3,7 +3,18 @@ import { useState, useEffect, useCallback } from "react";
 import { fetchDealerDetail, submitAccessRequest } from "./useDealers";
 import { fmtRevenueTable, tierClass, BuildingIcon } from "./dealerUtils";
 
-/* ── Collapsible section wrapper ─────────────────────────────── */
+/**
+ * Collapsible section wrapper used inside DealerDetailModal to group related content.
+ * Usage: Used internally by DealerDetailModal; not intended for standalone use.
+ * @param {Object} props
+ * @param {React.ReactNode} props.icon - Icon element displayed in the section header
+ * @param {string} props.title - Section title text
+ * @param {number} [props.count] - Optional item count displayed in parentheses after the title
+ * @param {string} [props.badge] - Optional badge label shown in the header
+ * @param {boolean} [props.defaultOpen=true] - Whether the section starts expanded
+ * @param {React.ReactNode} props.children - Section body content
+ * @returns {JSX.Element}
+ */
 const Section = ({ icon, title, count, badge, defaultOpen = true, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -18,7 +29,7 @@ const Section = ({ icon, title, count, badge, defaultOpen = true, children }) =>
           {badge && <span className="dn-detail-section-badge">{badge}</span>}
         </span>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.18s" }}>
+          className={`icon-chevron${open ? " icon-chevron--open" : ""}`}>
           <polyline points="18 15 12 9 6 15"/>
         </svg>
       </button>
@@ -27,7 +38,13 @@ const Section = ({ icon, title, count, badge, defaultOpen = true, children }) =>
   );
 };
 
-/* ── Related Dealer row ──────────────────────────────────────── */
+/**
+ * Renders a single row in the Related Dealers section of the dealer detail modal.
+ * Usage: Used internally by DealerDetailModal; receives a related dealer object as prop.
+ * @param {Object} props
+ * @param {Object} props.d - Related dealer data with name, code, city, region, relation, and tier fields
+ * @returns {JSX.Element}
+ */
 const RelatedDealerRow = ({ d }) => (
   <div className="dn-related-row">
     <div className="dn-related-left">
@@ -41,14 +58,20 @@ const RelatedDealerRow = ({ d }) => (
     </div>
     <div className="dn-related-tags">
       {d.relation && <span className="dn-relation-tag">{d.relation}</span>}
-      <span className={`dn-tier-pill ${tierClass(d.tier)}`} style={{ textTransform: "capitalize" }}>
+      <span className={`dn-tier-pill ${tierClass(d.tier)} text-capitalize`}>
         {d.tier ? d.tier.charAt(0).toUpperCase() + d.tier.slice(1) : "—"}
       </span>
     </div>
   </div>
 );
 
-/* ── Assigned Rep row ────────────────────────────────────────── */
+/**
+ * Renders a single row in the Assigned Reps section showing rep contact info and recent activity.
+ * Usage: Used internally by DealerDetailModal; receives an assigned rep object as prop.
+ * @param {Object} props
+ * @param {Object} props.r - Rep data with name, title, region, email, phone, visits_30d, orders_30d, and last_visit_fmt
+ * @returns {JSX.Element}
+ */
 const RepRow = ({ r }) => (
   <div className="dn-rep-row">
     <div className="dn-rep-left">
@@ -92,13 +115,22 @@ const RepRow = ({ r }) => (
   </div>
 );
 
-/* ── Access & Stewardship section ────────────────────────────── */
+/**
+ * Renders the Access and Stewardship section for submitting and viewing dealer stewardship requests.
+ * Usage: Used internally by DealerDetailModal; receives the full dealer object as prop.
+ * @param {Object} props
+ * @param {Object} props.dealer - Full dealer object including steward_uuid and access_requests array
+ * @param {function} [props.onRequestSent] - Optional callback invoked after a successful access request
+ * @returns {JSX.Element}
+ */
 const AccessStewardship = ({ dealer, onRequestSent }) => {
   const [uuid,    setUuid]    = useState("");
   const [sending, setSending] = useState(false);
   const [err,     setErr]     = useState("");
+  // Initialise local list from dealer prop; updated optimistically after submit
   const [reqs,    setReqs]    = useState(dealer.access_requests ?? []);
 
+  // Validates UUID input, submits access request, and prepends result locally
   const handleRequest = async () => {
     if (!uuid.trim()) { setErr("Please enter a target user UUID."); return; }
     setSending(true); setErr("");
@@ -153,12 +185,20 @@ const AccessStewardship = ({ dealer, onRequestSent }) => {
   );
 };
 
-/* ── Main modal ──────────────────────────────────────────────── */
+/**
+ * Full-screen modal displaying detailed information for a single dealer by code.
+ * Usage: Render when the user selects a dealer from the Dealer Network table; pass the dealer code and a close handler.
+ * @param {Object} props
+ * @param {string} props.code - Dealer code identifier used to fetch dealer detail data
+ * @param {function} props.onClose - Callback invoked when the modal backdrop or close button is clicked
+ * @returns {JSX.Element}
+ */
 const DealerDetailModal = ({ code, onClose }) => {
   const [dealer,  setDealer]  = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState("");
 
+  // Loads full dealer detail by code; re-runs if code prop changes
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try { setDealer(await fetchDealerDetail(code)); }
@@ -173,7 +213,7 @@ const DealerDetailModal = ({ code, onClose }) => {
       <div className="dn-detail-modal" onClick={(e) => e.stopPropagation()}>
 
         {loading && <div className="vp-loading"><span className="spinner vp-spinner" />Loading…</div>}
-        {!loading && error && <p className="modal-error" style={{ margin: 20 }}>{error}</p>}
+        {!loading && error && <p className="modal-error m-20">{error}</p>}
 
         {!loading && dealer && (
           <>

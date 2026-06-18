@@ -1,21 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { auditApi } from "../../services/rbacService";
-
-const ACTION_META = {
-  USER_CREATED:        { label: "User Created",        color: "#16a34a" },
-  USER_UPDATED:        { label: "User Updated",        color: "#2563eb" },
-  USER_ACTIVATED:      { label: "User Activated",      color: "#16a34a" },
-  USER_DEACTIVATED:    { label: "User Deactivated",    color: "#d97706" },
-  USER_ROLES_UPDATED:  { label: "Roles Changed",       color: "#7c3aed" },
-  ROLE_CREATED:        { label: "Role Created",        color: "#16a34a" },
-  ROLE_UPDATED:        { label: "Role Updated",        color: "#2563eb" },
-  ROLE_DELETED:        { label: "Role Deleted",        color: "#dc2626" },
-  ROLE_CLONED:         { label: "Role Cloned",         color: "#0891b2" },
-  PERMISSIONS_UPDATED: { label: "Permissions Updated", color: "#7c3aed" },
-  MENU_ACCESS_UPDATED: { label: "Menu Access Updated", color: "#7c3aed" },
-  PAGE_ACCESS_UPDATED: { label: "Page Access Updated", color: "#7c3aed" },
-};
+import { ACTION_META } from "../../config/constants";
 
 const ALL_ACTIONS = Object.keys(ACTION_META);
 
@@ -23,14 +9,24 @@ function ActionBadge({ action }) {
   const meta = ACTION_META[action] || { label: action, color: "#6b7280" };
   return (
     <span
-      className="am-role-tag"
-      style={{ background: meta.color + "18", color: meta.color, border: `1px solid ${meta.color}40`, whiteSpace: "nowrap" }}
+      className="am-role-tag am-audit-badge"
+      style={{ background: meta.color + "18", color: meta.color, borderColor: meta.color + "40" }}
     >
       {meta.label}
     </span>
   );
 }
 
+/**
+ * Renders a human-readable diff between old and new audit log values.
+ * Usage: Used internally by AuditTrail for the Changes column of each log row.
+ * Each action type has a custom layout; falls back to a generic key-diff for unknown types.
+ * @param {Object} props
+ * @param {Object|null} props.oldValue - Previous value snapshot from the audit record
+ * @param {Object|null} props.newValue - New value snapshot from the audit record
+ * @param {string} props.action - Audit action type (e.g. "USER_ROLES_UPDATED", "PERMISSIONS_UPDATED")
+ * @returns {JSX.Element}
+ */
 function ChangeSummary({ oldValue, newValue, action }) {
   if (!oldValue && !newValue) return <span className="am-text-muted">—</span>;
 
@@ -38,19 +34,20 @@ function ChangeSummary({ oldValue, newValue, action }) {
     const oldRoles = oldValue?.roles ?? [];
     const newRoles = newValue?.roles ?? [];
     return (
-      <div style={{ fontSize: "11px", lineHeight: "1.5" }}>
-        {oldRoles.length > 0 && <div style={{ color: "#dc2626" }}>− {oldRoles.join(", ")}</div>}
-        {newRoles.length > 0 && <div style={{ color: "#16a34a" }}>+ {newRoles.join(", ")}</div>}
-        {newRoles.length === 0 && <div style={{ color: "#6b7280" }}>All roles removed</div>}
+      <div className="am-change-meta">
+        {oldRoles.length > 0 && <div className="am-change-text-removed">− {oldRoles.join(", ")}</div>}
+        {newRoles.length > 0 && <div className="am-change-text-added">+ {newRoles.join(", ")}</div>}
+        {newRoles.length === 0 && <div className="am-change-label">All roles removed</div>}
       </div>
     );
   }
 
+  // Bulk-access changes only show item count delta to keep cells compact.
   if (["PERMISSIONS_UPDATED", "MENU_ACCESS_UPDATED", "PAGE_ACCESS_UPDATED"].includes(action)) {
     const oldItems = Object.values(oldValue ?? {})[0] ?? [];
     const newItems = Object.values(newValue ?? {})[0] ?? [];
     return (
-      <span style={{ fontSize: "11px", color: "#6b7280" }}>
+      <span className="am-change-label">
         {oldItems.length} → {newItems.length} items
       </span>
     );
@@ -58,7 +55,7 @@ function ChangeSummary({ oldValue, newValue, action }) {
 
   if (action === "ROLE_CLONED") {
     return (
-      <span style={{ fontSize: "11px", color: "#6b7280" }}>
+      <span className="am-change-label">
         From "{(newValue ?? oldValue)?.cloned_from ?? "?"}"
       </span>
     );
@@ -67,17 +64,17 @@ function ChangeSummary({ oldValue, newValue, action }) {
   // Generic key→value diff
   const combined = { ...oldValue, ...newValue };
   return (
-    <div style={{ fontSize: "11px", lineHeight: "1.6" }}>
+    <div className="am-change-diff">
       {Object.entries(combined).map(([key]) => (
         <div key={key}>
-          <span style={{ color: "#6b7280" }}>{key}: </span>
+          <span className="am-change-label">{key}: </span>
           {oldValue?.[key] !== undefined && (
-            <span style={{ color: "#dc2626", textDecoration: "line-through", marginRight: 4 }}>
+            <span className="am-change-text-removed">
               {String(oldValue[key])}
             </span>
           )}
           {newValue?.[key] !== undefined && (
-            <span style={{ color: "#16a34a" }}>{String(newValue[key])}</span>
+            <span className="am-change-text-added">{String(newValue[key])}</span>
           )}
         </div>
       ))}
@@ -85,6 +82,12 @@ function ChangeSummary({ oldValue, newValue, action }) {
   );
 }
 
+/**
+ * Exports the currently visible page of audit logs to a CSV file and triggers a browser download.
+ * Usage: Called internally when the Export CSV button is clicked.
+ * @param {Object[]} logs - Array of audit log entries from the current page
+ * @returns {void}
+ */
 function exportToCsv(logs) {
   const headers = ["Timestamp", "Action", "Performed By", "Target User", "Target Role", "Entity Type"];
   const rows = logs.map((l) => [
@@ -103,11 +106,19 @@ function exportToCsv(logs) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Read-only audit log viewer for all RBAC permission change events.
+ * Usage: Render in the Access Management page to surface the full system audit trail.
+ * Supports search, action filter, date range filters, pagination, and CSV export.
+ * @returns {JSX.Element}
+ */
 export default function AuditTrail() {
   const { authHeader } = useAuth();
 
+  // Stores paginated log response; page/limit kept here to drive pagination UI.
   const [data,    setData]    = useState({ logs: [], total: 0, page: 1, limit: 20 });
   const [loading, setLoading] = useState(false);
+  // filters.from/to are ISO date strings sent as query params for server-side filtering.
   const [filters, setFilters] = useState({ action: "", search: "", from: "", to: "" });
   const [toast,   setToast]   = useState(null);
 
@@ -131,6 +142,7 @@ export default function AuditTrail() {
   useEffect(() => { load(1); }, [load]);
 
   const set = (k, v) => setFilters((f) => ({ ...f, [k]: v }));
+  // Guard against 0 total so pagination never renders 0 pages.
   const totalPages = Math.ceil(data.total / data.limit) || 1;
 
   return (
@@ -138,13 +150,12 @@ export default function AuditTrail() {
       {toast && <div className={`am-toast am-toast--${toast.type}`}>{toast.msg}</div>}
 
       <div className="am-toolbar">
-        <div className="am-toolbar-left" style={{ flexWrap: "wrap", gap: "8px" }}>
+        <div className="am-toolbar-left am-filter-row">
           <input
-            className="am-search"
+            className="am-search am-filter-input-wide"
             placeholder="Search by user or role…"
             value={filters.search}
             onChange={(e) => set("search", e.target.value)}
-            style={{ minWidth: 180 }}
           />
           <select
             className="am-filter-select"
@@ -201,7 +212,7 @@ export default function AuditTrail() {
             ) : (
               data.logs.map((log) => (
                 <tr key={log.id}>
-                  <td className="am-text-muted" style={{ whiteSpace: "nowrap", fontSize: "12px" }}>
+                  <td className="am-text-muted am-timestamp-cell">
                     {new Date(log.created_at).toLocaleString(undefined, {
                       day: "2-digit", month: "short", year: "numeric",
                       hour: "2-digit", minute: "2-digit", second: "2-digit",
@@ -210,8 +221,8 @@ export default function AuditTrail() {
                   <td><ActionBadge action={log.action} /></td>
                   <td>
                     {log.performed_by_name
-                      ? <span className="am-user-cell" style={{ gap: 6 }}>
-                          <span className="am-avatar" style={{ width: 24, height: 24, fontSize: 10 }}>
+                      ? <span className="am-user-cell am-action-row">
+                          <span className="am-avatar am-icon-btn-sm">
                             {log.performed_by_name.charAt(0).toUpperCase()}
                           </span>
                           {log.performed_by_name}

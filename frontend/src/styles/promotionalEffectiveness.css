@@ -49,7 +49,7 @@
   }
   
   .promo-export-btn {
-    background: #0ea5e9;
+    background: var(--sky-color);
     color: white;
     border: none;
     border-radius: 8px;
@@ -82,7 +82,7 @@
   .promo-view-btn {
     background: transparent;
     border: none;
-    color: #0ea5e9;
+    color: var(--sky-color);
   }
   
   .promo-modal {
@@ -93,14 +93,27 @@
     position: relative;
   }
   
+  .promo-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
   .promo-close-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
     border: none;
     background: transparent;
+    font-size: 18px;
+    color: #9ca3af;
+    padding: 4px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    line-height: 1;
   }
-  
+
+  .promo-close-btn:hover { background: #f3f4f6; color: #374151; }
+
   .promo-modal-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -114,7 +127,80 @@
     color: #64748b;
     margin-bottom: 6px;
   }
-  
+
   .promo-modal-grid strong {
     font-size: 18px;
   }
+
+/* ── Promo modal — ensure it never overflows viewport ──── */
+.promo-modal {
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+══════════════════════════════════════════════════════ */
+
+/* Tablet (769–1199px) */
+@media (min-width: 769px) and (max-width: 1199px) {
+  .promo-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .promo-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile (≤ 768px) */
+@media (max-width: 768px) {
+  .promo-page {
+    padding: 16px;
+  }
+  .promo-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .promo-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .promo-chart-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .promo-table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .promo-filters {
+    flex-direction: column;
+    width: 100%;
+  }
+  .promo-filters input,
+  .promo-filters select,
+  .promo-export-btn {
+    width: 100%;
+  }
+  .promo-modal {
+    width: calc(100% - 32px);
+    max-width: 540px;
+    max-height: calc(100dvh - 48px);
+    border-radius: 12px;
+    padding: 20px 16px;
+    overflow-y: auto;
+  }
+  .promo-modal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Small mobile (≤ 480px) */
+@media (max-width: 480px) {
+  .promo-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}

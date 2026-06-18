@@ -1,9 +1,11 @@
 const multer = require("multer");
 const path   = require("path");
 const fs     = require("fs");
+const { MAX_UPLOAD_MB, ALLOWED_MIME_TYPES } = require("../config/constants");
 
 const UPLOAD_DIR = path.join(__dirname, "../../uploads");
 
+// Ensure the upload directory exists before any request is accepted
 try {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 } catch (err) {
@@ -15,27 +17,31 @@ const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
   filename:    (_req, file, cb) => {
     const ts   = Date.now();
+    // Sanitise the original name to prevent path traversal and special-char issues
     const safe = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, "_");
     cb(null, `${ts}_${safe}`);
   },
 });
-const ALLOWED_MIME = new Set(["text/csv", "application/csv"]);
-
+// Reject non-CSV uploads by checking both extension and MIME type
 const fileFilter = (_req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
-  if (ext === ".csv" && ALLOWED_MIME.has(file.mimetype)) {
+  if (ext === ".csv" && ALLOWED_MIME_TYPES.has(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error("Only CSV files are accepted."), false);
   }
 };
 
-const MAX_MB = parseInt(process.env.MAX_FILE_SIZE_MB || "10");
-
+/**
+ * Multer upload middleware configured for CSV-only file uploads.
+ * Files are stored on disk under the uploads/ directory with a timestamp-prefixed,
+ * sanitized filename. Rejects non-CSV files and enforces a MAX_UPLOAD_MB size limit.
+ * Usage: Applied as route middleware (e.g. router.post('/upload', upload.single('file'), ...))
+ */
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: MAX_MB * 1024 * 1024 },
+  limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
 });
 
 module.exports = upload;

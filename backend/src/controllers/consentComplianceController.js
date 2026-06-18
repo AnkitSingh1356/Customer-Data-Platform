@@ -1,5 +1,12 @@
-//backend\src\controllers\consentComplianceController.js
 const consentService = require("../services/consentComplianceService");
+
+/**
+ * Returns aggregated consent KPIs (opt-in rates, expiring consents, violations).
+ * Usage: Called by Express router on GET /api/consent/dashboard
+ * @param {import('express').Request} req - No query or body parameters used
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const getDashboardOverview = async (req, res) => {
   try {
     const data = await consentService.getDashboardOverview();
@@ -18,8 +25,16 @@ const getDashboardOverview = async (req, res) => {
   }
 };
 
+/**
+ * Returns paginated consent records with optional keyword search and status filter.
+ * Usage: Called by Express router on GET /api/consent/records
+ * @param {import('express').Request} req - req.query: { search, status (all|active|expired|revoked), page, limit }
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const getConsentRecords = async (req, res) => {
   try {
+    // Coerce page/limit to numbers; defaults ensure a safe first-page response
     const { search = "", status = "all", page = 1, limit = 10 } = req.query;
 
     const data = await consentService.getConsentRecords({
@@ -43,6 +58,13 @@ const getConsentRecords = async (req, res) => {
   }
 };
 
+/**
+ * Creates a new consent record; service validates required consent fields.
+ * Usage: Called by Express router on POST /api/consent/records
+ * @param {import('express').Request} req - req.body: consent record payload (fields validated by service)
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends 201 JSON: { success: true, data: created } on success; { success: false, message } on failure
+ */
 const createConsentRecord = async (req, res) => {
   try {
     const created = await consentService.createConsentRecord(req.body);
@@ -61,6 +83,13 @@ const createConsentRecord = async (req, res) => {
   }
 };
 
+/**
+ * Updates an existing consent record (e.g., status change on withdrawal or renewal).
+ * Usage: Called by Express router on PUT /api/consent/records/:id
+ * @param {import('express').Request} req - req.params.id: consent record ID; req.body: fields to update
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data: updated } on success; { success: false, message } on failure
+ */
 const updateConsentRecord = async (req, res) => {
   try {
     const updated = await consentService.updateConsentRecord(
@@ -82,6 +111,13 @@ const updateConsentRecord = async (req, res) => {
   }
 };
 
+/**
+ * Exports the full consent audit trail for regulatory reporting (GDPR/CCPA compliance).
+ * Usage: Called by Express router on GET /api/consent/audit-logs/export
+ * @param {import('express').Request} req - No parameters used
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data: logs } on success; { success: false, message } on failure
+ */
 const exportAuditLogs = async (req, res) => {
   try {
     const logs = await consentService.exportAuditLogs();
@@ -101,6 +137,13 @@ const exportAuditLogs = async (req, res) => {
 };
 
 
+/**
+ * Bulk-exports all consent records (no pagination) for data portability requests.
+ * Usage: Called by Express router on GET /api/consent/records/export
+ * @param {import('express').Request} req - No parameters used
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data: records } on success; { success: false, message } on failure
+ */
 const exportConsentRecords = async (req, res) => {
   try {
     const records = await consentService.getAllConsentRecords();

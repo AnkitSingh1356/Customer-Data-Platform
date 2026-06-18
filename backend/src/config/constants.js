@@ -1,0 +1,53 @@
+// Auth
+const SALT_ROUNDS = 12;
+const JWT_EXPIRES = process.env.JWT_EXPIRES_IN || '7d';
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 128;
+
+// Rate limiting
+const GLOBAL_RATE_WINDOW_MS = 60 * 1000;
+const GLOBAL_RATE_MAX = 200;
+const AUTH_RATE_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_RATE_MAX = 10;
+
+// File upload
+const MAX_UPLOAD_MB = parseInt(process.env.MAX_MB, 10) || 10;
+const MAX_CSV_ROWS = parseInt(process.env.MAX_ROWS, 10) || 10000;
+const ALLOWED_MIME_TYPES = new Set(['text/csv', 'application/csv']);
+
+// Bulk processing
+const UPLOAD_CHUNK_SIZE = 100;
+const MAX_UPLOAD_ERRORS = 200;
+
+// Pagination defaults
+const DEFAULT_PAGE_LIMIT = 20;
+const DEFAULT_ROLES_LIMIT = 50;
+const MAX_PAGE_LIMIT = 200;
+
+// Analytics thresholds
+const BOUNCE_THRESHOLD_SECONDS = 30;
+const TOP_PAGES_LIMIT = 5;
+const ACTIVITY_DEFAULT_LIMIT = 10;
+const ACTIVITY_MAX_LIMIT = 500;
+const ANALYTICS_EXPORT_LIMIT = 50000;
+
+// Consent
+const VALID_CONSENT_STATUSES = ['granted', 'revoked', 'pending'];
+const CONSENT_EXPORT_LIMIT = 50000;
+
+// Customer access control
+const RESTRICTED_CUSTOMER_TYPES = new Set(['Dealer', 'B2B Customer', 'B2C Customer']);
+
+// RBAC standard permission actions
+const STANDARD_PERMISSION_ACTIONS = ['create', 'read', 'update', 'delete', 'export', 'import'];
+
+module.exports = {
+  SALT_ROUNDS, JWT_EXPIRES, PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH,
+  GLOBAL_RATE_WINDOW_MS, GLOBAL_RATE_MAX, AUTH_RATE_WINDOW_MS, AUTH_RATE_MAX,
+  MAX_UPLOAD_MB, MAX_CSV_ROWS, ALLOWED_MIME_TYPES,
+  UPLOAD_CHUNK_SIZE, MAX_UPLOAD_ERRORS,
+  DEFAULT_PAGE_LIMIT, DEFAULT_ROLES_LIMIT, MAX_PAGE_LIMIT,
+  BOUNCE_THRESHOLD_SECONDS, TOP_PAGES_LIMIT, ACTIVITY_DEFAULT_LIMIT, ACTIVITY_MAX_LIMIT, ANALYTICS_EXPORT_LIMIT,
+  VALID_CONSENT_STATUSES, CONSENT_EXPORT_LIMIT,
+  RESTRICTED_CUSTOMER_TYPES, STANDARD_PERMISSION_ACTIONS,
+};

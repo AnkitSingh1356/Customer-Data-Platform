@@ -8,6 +8,7 @@ import PageAccessManagement from "../../components/AccessManagement/PageAccessMa
 import AuditTrail           from "../../components/AccessManagement/AuditTrail";
 import "../../styles/access-management.css";
 
+// Ordered tab list drives both the tab bar and the component lookup below
 const TABS = [
   { id: "users",       label: "Users" },
   { id: "roles",       label: "Roles" },
@@ -18,6 +19,7 @@ const TABS = [
   { id: "audit",       label: "Audit Trail" },
 ];
 
+// Maps tab IDs to their lazily-rendered components; only the active tab mounts
 const TAB_COMPONENTS = {
   users:       UserManagement,
   roles:       RoleManagement,

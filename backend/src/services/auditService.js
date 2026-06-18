@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 
+// Canonical action-type constants shared across all permission audit calls
 const ACTIONS = {
   USER_CREATED:         "USER_CREATED",
   USER_UPDATED:         "USER_UPDATED",
@@ -15,6 +16,21 @@ const ACTIONS = {
   PAGE_ACCESS_UPDATED:  "PAGE_ACCESS_UPDATED",
 };
 
+/**
+ * Persists a permission-change event to the audit log; errors are swallowed so
+ * audit failures never block the operation that triggered them.
+ * Usage: Called by rbacService after any user, role, or permission mutation
+ * @param {Object} opts - Audit event details
+ * @param {string} opts.action - One of the ACTIONS constants (e.g. "USER_CREATED")
+ * @param {Object} [opts.performedBy] - User who performed the action { id, full_name, email }
+ * @param {Object} [opts.targetUser] - User affected by the action { id, full_name, name }
+ * @param {Object} [opts.targetRole] - Role affected by the action { id, name }
+ * @param {string} [opts.entityType] - Entity type string for context
+ * @param {*} [opts.oldValue] - Previous state (serialised to JSONB)
+ * @param {*} [opts.newValue] - New state (serialised to JSONB)
+ * @param {*} [opts.metadata] - Additional context (serialised to JSONB)
+ * @returns {Promise<void>}
+ */
 async function log({
   action,
   performedBy,
@@ -26,6 +42,7 @@ async function log({
   metadata,
 }) {
   try {
+    // Serialise before/after state as JSONB for flexible querying
     await pool.query(
       `INSERT INTO permission_audit_logs
          (action, performed_by_id, performed_by_name,
@@ -52,6 +69,19 @@ async function log({
   }
 }
 
+/**
+ * Returns a paginated, filterable list of permission audit log entries.
+ * Usage: Called by auditController.getLogs to power the audit log UI
+ * @param {Object} [opts={}] - Filter and pagination options
+ * @param {number} [opts.page=1] - Page number (1-based)
+ * @param {number} [opts.limit=20] - Records per page
+ * @param {string} [opts.action] - Filter by action type constant (e.g. "USER_CREATED")
+ * @param {string} [opts.search] - Partial match on performer name, target user/role name
+ * @param {string} [opts.from] - Start date filter (ISO timestamp string)
+ * @param {string} [opts.to] - End date filter (inclusive, ISO date string)
+ * @param {string} [opts.target_user_id] - Filter to a specific target user by ID
+ * @returns {Promise<{ logs: Array<Object>, total: number, page: number, limit: number }>}
+ */
 async function getLogs({
   page           = 1,
   limit          = 20,
@@ -64,6 +94,7 @@ async function getLogs({
   const conditions = [];
   const params     = [];
 
+  // Build WHERE clause dynamically; only applied filters add parameters
   if (target_user_id) {
     params.push(parseInt(target_user_id, 10));
     conditions.push(`l.target_user_id = $${params.length}`);
@@ -83,12 +114,14 @@ async function getLogs({
     conditions.push(`l.created_at >= $${params.length}::timestamptz`);
   }
   if (to) {
+    // Add one day so the 'to' date is inclusive of the entire day
     params.push(to);
     conditions.push(`l.created_at <= ($${params.length}::date + INTERVAL '1 day')`);
   }
 
   const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
 
+  // Count with same filters before appending LIMIT/OFFSET params
   const countRes = await pool.query(
     `SELECT COUNT(*) FROM permission_audit_logs l ${where}`,
     params

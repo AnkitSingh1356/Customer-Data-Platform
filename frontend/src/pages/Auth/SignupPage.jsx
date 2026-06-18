@@ -1,12 +1,6 @@
 import { useState } from "react";
 import { useAuth }  from "../../auth/AuthContext";
-
-const CUSTOMER_TYPES = [
-  { value: "Dealer",       label: "Dealer" },
-  { value: "B2B Customer", label: "B2B Customer" },
-  { value: "B2C Customer", label: "B2C Customer" },
-  { value: "Employee",     label: "Employee" },
-];
+import { CUSTOMER_TYPES } from '../../config/constants';
 
 const SignupPage = ({ onSwitchToLogin }) => {
   const { register, loading } = useAuth();
@@ -21,6 +15,7 @@ const SignupPage = ({ onSwitchToLogin }) => {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Determines whether the customer_type dropdown is rendered and which role is sent
   const isCustomer = form.account_type === "customer";
 
   const validate = () => {
@@ -38,6 +33,7 @@ const SignupPage = ({ onSwitchToLogin }) => {
     if (err) { setError(err); return; }
     setError("");
     try {
+      // Non-customer registrations are created as admins with "Employee" type
       await register({
         full_name:     form.full_name.trim(),
         email:         form.email.trim(),
@@ -116,7 +112,7 @@ const SignupPage = ({ onSwitchToLogin }) => {
                   onChange={(e) => set("customer_type", e.target.value)}
                 >
                   {CUSTOMER_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+                    <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
               </div>

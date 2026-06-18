@@ -1,5 +1,11 @@
 const pool = require("../config/db");
 
+/**
+ * Returns cross-campaign KPIs: overall spend-to-budget ratio (used as ROI proxy),
+ * total committed budget, active campaign count, and mean conversion rate.
+ * Usage: Called by promotionalEffectivenessController.getOverview
+ * @returns {Promise<{ overall_roi: string, total_budget: string, active_campaigns: string, avg_conversion: string }>}
+ */
 const getOverview = async () => {
   const query = `
     SELECT
@@ -30,6 +36,12 @@ const getOverview = async () => {
   return rows[0];
 };
 
+/**
+ * Returns all campaigns ordered by budget descending for bar-chart rendering
+ * of budget vs. spend per campaign.
+ * Usage: Called by promotionalEffectivenessController.getBudgetPerformance
+ * @returns {Promise<Array<{ id: number, campaign_name: string, total_budget: string, spent_amount: string }>>}
+ */
 const getBudgetPerformance = async () => {
   const query = `
     SELECT
@@ -48,6 +60,11 @@ const getBudgetPerformance = async () => {
   return rows;
 };
 
+/**
+ * Returns campaign counts grouped by status for pie/donut chart consumption.
+ * Usage: Called by promotionalEffectivenessController.getStatusDistribution
+ * @returns {Promise<Array<{ name: string, value: number }>>} Status labels and counts
+ */
 const getStatusDistribution = async () => {
   const query = `
     SELECT
@@ -64,6 +81,14 @@ const getStatusDistribution = async () => {
   return rows;
 };
 
+/**
+ * Returns filtered campaigns ordered by creation date descending.
+ * Usage: Called by promotionalEffectivenessController.getCampaigns
+ * @param {Object} opts - Filter options
+ * @param {string} [opts.search] - Partial match on campaign_name
+ * @param {string} [opts.status] - Filter by status ("all" disables the filter)
+ * @returns {Promise<Array<Object>>} Campaign rows matching the filters
+ */
 const getCampaigns = async ({
   search,
   status,
@@ -105,6 +130,12 @@ const getCampaigns = async ({
   return rows;
 };
 
+/**
+ * Fetches the full campaign list with all reportable fields for CSV export;
+ * intentionally omits internal IDs and timestamps not needed in reports.
+ * Usage: Called by promotionalEffectivenessController.exportCampaigns
+ * @returns {Promise<Array<{ campaign_name, status, campaign_type, total_budget, spent_amount, audience_size, conversion_rate, start_date, end_date }>>}
+ */
 const exportCampaigns = async () => {
   const query = `
     SELECT

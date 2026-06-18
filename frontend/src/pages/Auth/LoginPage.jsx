@@ -8,6 +8,7 @@ const LoginPage = ({ onSwitchToSignup }) => {
   const [error,    setError]    = useState("");
   const [showPwd,  setShowPwd]  = useState(false);
 
+  // Client-side validation runs before the API call to give instant feedback
   const validate = () => {
     if (!email.trim())    return "Email address is required.";
     if (!/\S+@\S+\.\S+/.test(email)) return "Enter a valid email address.";

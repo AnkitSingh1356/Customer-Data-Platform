@@ -1,10 +1,11 @@
-//frontend\src\components\consent-compliance\ConsentStatusBadge.jsx
+// Maps a consent status string to a CSS-class-driven colour badge.
+// When onClick is provided the badge acts as an interactive toggle target.
 const ConsentStatusBadge = ({ status = "none", onClick }) => {
   return (
     <span
-      className={`consent-status-badge ${status.toLowerCase()}`}
+      // CSS class drives colour: granted=green, revoked=red, pending=amber, none=grey
+      className={`consent-status-badge ${status.toLowerCase()} ${onClick ? "consent-badge--clickable" : "consent-badge--static"}`}
       onClick={onClick}
-      style={{ cursor: onClick ? "pointer" : "default" }}
     >
       {status}
     </span>

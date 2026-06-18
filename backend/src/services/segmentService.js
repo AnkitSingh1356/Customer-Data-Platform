@@ -1,5 +1,12 @@
 const pool = require("../config/db");
 
+/**
+ * Normalises raw segment DB rows: ensures rules is always an array, coerces
+ * member_count to a number, and formats created_at for display.
+ * Usage: Applied to all query results before returning them to controllers
+ * @param {Array<Object>} rows - Raw segment rows from the database
+ * @returns {Array<Object>} Normalised segment rows
+ */
 const fmt = (rows) =>
   rows.map((r) => ({
     ...r,
@@ -10,6 +17,11 @@ const fmt = (rows) =>
       : null,
   }));
 
+/**
+ * Returns aggregate segment KPIs: total count, active count, total members, and average segment size.
+ * Usage: Called by segmentController.getStats
+ * @returns {Promise<{ total_segments: string, active_count: string, total_members: string, avg_segment_size: string }>}
+ */
 async function getStats() {
   const res = await pool.query(`
     SELECT
@@ -24,6 +36,14 @@ async function getStats() {
   return res.rows[0];
 }
 
+/**
+ * Returns a filtered list of segments ordered by creation date descending.
+ * Usage: Called by segmentController.getSegments
+ * @param {Object} [opts={}] - Filter options
+ * @param {string} [opts.search=""] - Partial match on segment name or description
+ * @param {string} [opts.status=""] - Filter by status (empty string disables the filter)
+ * @returns {Promise<Array<Object>>} Normalised segment rows
+ */
 async function listSegments({ search = "", status = "" } = {}) {
   const conditions = [];
   const params     = [];
@@ -48,6 +68,12 @@ async function listSegments({ search = "", status = "" } = {}) {
   return fmt(res.rows);
 }
 
+/**
+ * Returns a single segment by primary key, or null if not found.
+ * Usage: Called by segmentController.getSegmentById
+ * @param {number} id - Segment primary key
+ * @returns {Promise<Object|null>} Normalised segment row or null
+ */
 async function getSegment(id) {
   const res = await pool.query(
     `SELECT id, name, description, status, activity_window, match_type, rules, member_count, created_at
@@ -57,6 +83,19 @@ async function getSegment(id) {
   return res.rows.length ? fmt(res.rows)[0] : null;
 }
 
+/**
+ * Persists a new segment with its filter rules serialised as JSONB.
+ * match_type controls whether rules are evaluated with AND ("all") or OR ("any").
+ * Usage: Called by segmentController.createSegment
+ * @param {Object} opts - Segment definition
+ * @param {string} opts.name - Required segment name
+ * @param {string} [opts.description] - Optional description
+ * @param {string} [opts.status="active"] - Segment status
+ * @param {string} [opts.activity_window="All time"] - Time window for member matching
+ * @param {string} [opts.match_type="all"] - Rule combination mode: "all" (AND) or "any" (OR)
+ * @param {Array<Object>} [opts.rules=[]] - Filter rule objects serialised to JSONB
+ * @returns {Promise<Object>} Normalised newly created segment row
+ */
 async function createSegment({ name, description, status, activity_window, match_type, rules }) {
   const res = await pool.query(
     `INSERT INTO segments (name, description, status, activity_window, match_type, rules)
@@ -73,6 +112,19 @@ async function createSegment({ name, description, status, activity_window, match
   return fmt(res.rows)[0];
 }
 
+/**
+ * Replaces all mutable fields on a segment; returns null if the ID does not exist.
+ * Usage: Called by segmentController.updateSegment
+ * @param {number} id - Segment primary key
+ * @param {Object} opts - Updated segment definition (same shape as createSegment opts)
+ * @param {string} opts.name - Segment name
+ * @param {string} [opts.description] - Description
+ * @param {string} [opts.status="active"] - Segment status
+ * @param {string} [opts.activity_window="All time"] - Time window
+ * @param {string} [opts.match_type="all"] - Rule combination mode
+ * @param {Array<Object>} [opts.rules=[]] - Filter rule objects
+ * @returns {Promise<Object|null>} Normalised updated segment row, or null if not found
+ */
 async function updateSegment(id, { name, description, status, activity_window, match_type, rules }) {
   const res = await pool.query(
     `UPDATE segments
@@ -96,6 +148,12 @@ async function updateSegment(id, { name, description, status, activity_window, m
   return res.rows.length ? fmt(res.rows)[0] : null;
 }
 
+/**
+ * Deletes a segment by primary key and returns true if a row was deleted, false otherwise.
+ * Usage: Called by segmentController.deleteSegment
+ * @param {number} id - Segment primary key
+ * @returns {Promise<boolean>} True if the segment was deleted, false if it did not exist
+ */
 async function deleteSegment(id) {
   const res = await pool.query("DELETE FROM segments WHERE id = $1 RETURNING id", [id]);
   return res.rows.length > 0;

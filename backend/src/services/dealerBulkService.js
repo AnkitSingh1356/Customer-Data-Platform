@@ -2,6 +2,12 @@ const pool                              = require("../config/db");
 const { parseDealerCSV }                = require("../utils/dealerCsvParser");
 const fs                                = require("fs");
 
+/**
+ * Creates a pending dealer bulk-upload job record for async tracking and returns its ID.
+ * Usage: Called by dealerBulkController before processing begins
+ * @param {string} filename - Original uploaded filename for UI display
+ * @returns {Promise<number>} The new job's primary key
+ */
 async function createDealerJob(filename) {
   const res = await pool.query(
     `INSERT INTO bulk_upload_jobs (filename, status) VALUES ($1, 'pending') RETURNING id`,
@@ -10,6 +16,15 @@ async function createDealerJob(filename) {
   return res.rows[0].id;
 }
 
+/**
+ * Processes a dealer CSV upload inside a single DB transaction. Row-level failures are
+ * captured in errorLog without aborting the whole batch. The temp file is always cleaned
+ * up regardless of outcome.
+ * Usage: Called by dealerBulkController after the job record is created
+ * @param {number} jobId - Job primary key used to update status and error log
+ * @param {string} filePath - Absolute path to the uploaded temp CSV file
+ * @returns {Promise<void>}
+ */
 async function processDealerUpload(jobId, filePath) {
   // Mark processing
   await pool.query(`UPDATE bulk_upload_jobs SET status = 'processing' WHERE id = $1`, [jobId]);
@@ -23,6 +38,8 @@ async function processDealerUpload(jobId, filePath) {
     errorLog.push(...errors.slice(0, 200));
     totalRows = rows.length + errors.length;
 
+    // All upserts run in one transaction; row-level catch keeps the batch going
+    // while recording individual failures in errorLog.
     const client = await pool.connect();
     try {
       await client.query("BEGIN");

@@ -1,17 +1,7 @@
 import { useState, useEffect } from "react";
 import RuleBuilder, { emptyRule } from "./RuleBuilder";
-
-const ACTIVITY_WINDOWS = [
-  "All time",
-  "Last 7d",
-  "Last 14d",
-  "Last 30d",
-  "Last 60d",
-  "Last 90d",
-  "Last 6m",
-  "Last 12m",
-  "YTD",
-];
+import { ACTIVITY_WINDOWS } from '../../config/constants';
+// Baseline form state shared by both create and edit modes
 const defaultForm = () => ({
   name:            "",
   description:     "",
@@ -47,6 +37,7 @@ const SegmentModal = ({ mode = "create", segment = null, onClose, onSubmit }) =>
     setError("");
     setSaving(true);
     try {
+      // Strip incomplete rule rows before sending to avoid partial-condition errors
       const cleanRules = form.rules.filter((r) => r.field && r.operator && r.value);
       await onSubmit({ ...form, rules: cleanRules });
       onClose();

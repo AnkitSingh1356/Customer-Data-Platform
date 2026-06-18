@@ -1,23 +1,27 @@
+// Displays a full KPI breakdown for a selected campaign.
+// Monetary fields (budget, spent) are formatted with toLocaleString.
+// Date fields fall back to "—" when absent to avoid rendering "Invalid Date".
 const CampaignDetailsModal = ({
     campaign,
     onClose,
   }) => {
     if (!campaign) return null;
-  
+
     return (
       <div className="modal-backdrop">
         <div className="promo-modal">
-          <button
-            className="promo-close-btn"
-            onClick={onClose}
-          >
-            ✕
-          </button>
-  
-          <h2>
-            {campaign.campaign_name}
-          </h2>
-  
+          <div className="promo-modal-header">
+            <h2>
+              {campaign.campaign_name}
+            </h2>
+            <button
+              className="promo-close-btn"
+              onClick={onClose}
+            >
+              ✕
+            </button>
+          </div>
+
           <div className="promo-modal-grid">
             <div>
               <span>Type</span>

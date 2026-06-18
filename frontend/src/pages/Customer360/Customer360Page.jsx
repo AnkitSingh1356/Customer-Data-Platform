@@ -1,4 +1,3 @@
-//sidebar-app\src\pages\Customer360\Customer360Page.jsx
 import { useEffect, useState, useCallback, useMemo } from "react";
 import BulkUploadModal from "../../components/BulkUpload/BulkUploadModal";
 import CustomerProfileModal from "../../components/CustomerProfile/index.jsx";
@@ -12,6 +11,7 @@ import { useRBAC } from "../../auth/RBACContext";
 
 const API = `${import.meta.env.VITE_API_BASE_URL}/api/customers`;
 
+// Sentinel value; any filter left at "all" is omitted from the query string
 const DEFAULT_FILTERS = { type: "all", status: "all", source: "all" };
 
 const INITIAL_STATS = {
@@ -62,11 +62,14 @@ const Customer360Page = () => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  // 400 ms debounce keeps the API quiet while the user is still typing
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 400);
     return () => clearTimeout(t);
   }, [search]);
 
+  // Fetches paginated customer list and summary stats in parallel;
+  // uses AbortController so navigating away cancels the in-flight request
   const fetchCustomers = useCallback(async () => {
     const controller = new AbortController();
     try {
@@ -100,10 +103,12 @@ const Customer360Page = () => {
 
   useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
 
+  // Guard against stale page index when filters reduce the total page count
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
+  // Refetch after modal closes so the table reflects newly uploaded records
   const handleUploadClose = () => { setShowUploadModal(false); fetchCustomers(); };
   const columns = [
     {

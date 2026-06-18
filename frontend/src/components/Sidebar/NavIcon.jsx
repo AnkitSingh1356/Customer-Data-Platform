@@ -1,3 +1,7 @@
+/**
+ * Maps nav item IDs to their corresponding inline SVG icons.
+ * Returns null for unknown IDs so missing icons fail silently.
+ */
 const iconMap = {
   dashboard: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -73,6 +77,13 @@ const iconMap = {
   ),
 };
 
+/**
+ * Renders the SVG icon corresponding to a sidebar navigation item ID.
+ * Usage: Used internally by NavItem to display the icon for each nav entry.
+ * @param {Object} props
+ * @param {string} props.name - Nav item ID key (e.g. "dashboard", "segments", "dealerNetwork")
+ * @returns {JSX.Element|null} The matching SVG icon or null if the ID is unrecognised
+ */
 const NavIcon = ({ name }) => iconMap[name] ?? null;
 
 export default NavIcon;

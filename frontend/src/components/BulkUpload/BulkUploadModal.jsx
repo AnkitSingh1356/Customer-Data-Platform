@@ -3,6 +3,9 @@ import apiFetch from "../../services/apiFetch";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
+// Generic two-phase bulk upload modal: file selection → upload result summary.
+// All endpoint URLs, accepted types, and required fields come from `config`
+// so the same component is reusable across different entity types.
 const BulkUploadModal = ({
   onClose,
   config,
@@ -25,6 +28,7 @@ const BulkUploadModal = ({
     requiredFields = [],
   } = config;
 
+  // Validates file extension before staging; rejects non-CSV files early.
   const handleFile = (selectedFile) => {
     if (!selectedFile) return;
 
@@ -61,6 +65,7 @@ const BulkUploadModal = ({
         throw new Error(data.error || "Upload failed");
       }
 
+      // Transition to the result summary phase; notify the parent of completion.
       setResult(data);
 
       if (onSuccess) {

@@ -1,3 +1,5 @@
+// CRUD management for RBAC roles. Supports create, edit, clone, soft-delete,
+// and active/inactive toggling. Clone copies all permissions, menus, and pages.
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
@@ -44,6 +46,7 @@ function RoleModal({ mode, initial, onSave, onClose, loading }) {
   );
 }
 
+// Pre-fills the new role name with "(Copy)" suffix as a convenience default.
 function CloneModal({ role, onSave, onClose, loading }) {
   const [name, setName] = useState(`${role.name} (Copy)`);
   return (
@@ -71,6 +74,7 @@ function CloneModal({ role, onSave, onClose, loading }) {
   );
 }
 
+// Deletion is blocked when users are assigned; the error copy explains why.
 function DeleteConfirmModal({ role, onConfirm, onClose, loading }) {
   return (
     <div className="am-modal-overlay" onClick={onClose}>
@@ -139,6 +143,7 @@ export default function RoleManagement() {
     finally { setSaving(false); }
   };
 
+  // After edit, stay on the current page to avoid losing the user's scroll position.
   const handleEdit = async (payload) => {
     setSaving(true);
     try {

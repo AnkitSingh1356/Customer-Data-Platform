@@ -1,5 +1,12 @@
 import { useState } from "react";
+import { ATTR_TYPES } from '../../config/constants';
 
+/**
+ * Maps a DQI severity string to a CSS modifier class for badge coloring.
+ * Usage: Used internally by DataQualityIssues to style severity badges.
+ * @param {string} [s=""] - Severity level string (e.g. "high", "medium", "low")
+ * @returns {string} CSS modifier class (e.g. "dqi-high", "dqi-medium", "dqi-low")
+ */
 const severityClass = (s = "") => {
   const v = s.toLowerCase();
   if (v === "high")   return "dqi-high";
@@ -67,7 +74,6 @@ const DataQualityIssues = ({ items }) => (
 );
 
 /* ── Flexible Attributes ─────────────────────────────────────── */
-const ATTR_TYPES = ["Behavioral", "Demographic", "Transactional", "Custom"];
 
 const FlexibleAttributes = ({ items, onAdd }) => {
   const [attrType, setAttrType]   = useState("Behavioral");
@@ -150,6 +156,16 @@ const ProfileTags = ({ tags = [] }) =>
     </div>
   ) : null;
 
+/**
+ * Composes all supplementary profile sections below the core details grid.
+ * Usage: Rendered after ProfileDetails in the customer profile modal; requires the full profile object.
+ * Each sub-section safely defaults to an empty array when the API field is absent.
+ * @param {Object} props
+ * @param {Object} props.profile - Customer profile with dealer_affiliations, data_quality_issues,
+ *   flexible_attributes, and tags arrays
+ * @param {function} props.onAdd - Callback invoked when the user adds a new flexible attribute
+ * @returns {JSX.Element}
+ */
 const ProfileSections = ({ profile, onAdd }) => (
   <>
     <DealerAffiliations items={profile.dealer_affiliations || []} />

@@ -25,10 +25,10 @@ import {
 import { exportCsvFile } from "../../utils/exportCsv";
 
 import "../../styles/consentCompliance.css";
-
-const COLORS = ["#0ea5e9", "#2F855A", "#5B5B5B"];
+import { CONSENT_CHART_COLORS } from '../../config/constants';
 
 const ConsentCompliancePage = () => {
+  // Pre-compute permission flags to conditionally show/hide action buttons
   const { hasPermission } = useRBAC();
   const canCreate = hasPermission('consent-compliance', 'create');
   const canUpdate = hasPermission('consent-compliance', 'update');
@@ -66,10 +66,13 @@ const ConsentCompliancePage = () => {
     message: "",
   });
 
+  // Ref holds the active toast timer so it can be cleared before showing a new toast
   const toastTimer = useRef(null);
 
+  // Clear any pending toast timer on unmount to prevent state updates on dead component
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
+  // 400 ms debounce on the customer search field before triggering a records refetch
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -199,6 +202,7 @@ async function handleCreateConsent(payload) {
   }
 }
 
+// Cycles a single consent field through none→granted→revoked→pending on badge click
 async function handleInlineToggle(row, field) {
   try {
     const states = ["none", "granted", "revoked", "pending"];
@@ -288,6 +292,7 @@ async function handleExport() {
   }
 }
 
+// Derived from overview KPIs so the pie chart always reflects the latest dashboard fetch
 const chartData = useMemo(
   () => [
     {
@@ -450,7 +455,7 @@ return (
                   dataKey="value"
                 >
                   {chartData.map((entry, index) => (
-                    <Cell key={index} fill={COLORS[index]} />
+                    <Cell key={index} fill={CONSENT_CHART_COLORS[index]} />
                   ))}
                 </Pie>
 
@@ -468,7 +473,7 @@ return (
               <span
                 className="cc-dot"
                 style={{
-                  background: COLORS[index],
+                  background: CONSENT_CHART_COLORS[index],
                 }}
               />
 

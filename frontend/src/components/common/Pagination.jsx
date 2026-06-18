@@ -1,4 +1,15 @@
-//cdp-bulk-upload\sidebar-app\src\components\common\Pagination.jsx
+/**
+ * Stateless pagination bar with a rows-per-page selector and previous/next navigation.
+ * Usage: Place below a data table; the parent owns page/limit state and re-fetches data in the callbacks.
+ * @param {Object} props
+ * @param {number} props.page - Current page number (1-based)
+ * @param {number} props.totalPages - Total number of pages
+ * @param {number} props.limit - Current rows-per-page value
+ * @param {function} props.onPageChange - Callback invoked with the new page number
+ * @param {function} props.onLimitChange - Callback invoked with the new limit value
+ * @param {number[]} [props.limitOptions=[5, 10, 20, 50]] - Available rows-per-page options
+ * @returns {JSX.Element}
+ */
 const Pagination = ({
     page,
     totalPages,

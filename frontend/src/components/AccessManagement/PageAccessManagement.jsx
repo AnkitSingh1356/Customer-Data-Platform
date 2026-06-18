@@ -1,3 +1,5 @@
+// Controls which application pages (routes) each role can access.
+// Pages are grouped by module for easier bulk selection.
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
@@ -8,9 +10,11 @@ export default function PageAccessManagement() {
   const [roles,        setRoles]        = useState([]);
   const [pages,        setPages]        = useState([]);
   const [selectedRole, setSelectedRole] = useState("");
+  // Set of page IDs currently granted to the selected role.
   const [checkedIds,   setCheckedIds]   = useState(new Set());
   const [loading,      setLoading]      = useState(false);
   const [saving,       setSaving]       = useState(false);
+  // Prevents accidental saves; Save button is disabled until a checkbox changes.
   const [dirty,        setDirty]        = useState(false);
   const [toast,        setToast]        = useState(null);
 
@@ -56,6 +60,7 @@ export default function PageAccessManagement() {
     setDirty(true);
   };
 
+  // Toggle behaves as "Deselect All" when every page is already checked.
   const toggleAll = () => {
     const allIds = pages.map((p) => p.id);
     const allChecked = allIds.every((id) => checkedIds.has(id));
@@ -74,6 +79,8 @@ export default function PageAccessManagement() {
     finally { setSaving(false); }
   };
 
+  // Group pages by module_key so they render in collapsible module sections.
+  // Pages without a module fall under the "other" bucket.
   const grouped = pages.reduce((acc, p) => {
     const mod = p.module_key || "other";
     if (!acc[mod]) acc[mod] = [];

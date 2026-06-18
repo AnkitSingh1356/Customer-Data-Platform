@@ -1,3 +1,11 @@
+/**
+ * Renders a single labelled field in the profile details grid.
+ * Usage: Used internally by ProfileDetails; null/empty values fall back to an em-dash.
+ * @param {Object} props
+ * @param {string} props.label - Field label text (e.g. "Phone", "City")
+ * @param {string|number} props.value - Field value; renders "—" when falsy
+ * @returns {JSX.Element}
+ */
 const Field = ({ label, value }) => (
   <div className="vp-field">
     <span className="vp-field-label">{label}</span>
@@ -5,6 +13,15 @@ const Field = ({ label, value }) => (
   </div>
 );
 
+/**
+ * Renders the core contact and transactional fields for a customer profile.
+ * Usage: Rendered below the ProfileHeader inside the customer profile modal.
+ * Lifetime value is formatted as USD currency; all other fields are raw strings.
+ * @param {Object} props
+ * @param {Object} props.profile - Customer profile with phone, city, country, channel, customer_type,
+ *   total_orders, lifetime_value, and consent_status fields
+ * @returns {JSX.Element}
+ */
 const ProfileDetails = ({ profile }) => (
   <div className="vp-fields-grid">
     <Field label="Phone"           value={profile.phone} />

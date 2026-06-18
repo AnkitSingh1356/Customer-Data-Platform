@@ -1,5 +1,13 @@
 import { Component } from "react";
 
+/**
+ * React error boundary that catches uncaught render errors in its child subtree and displays a fallback UI.
+ * Usage: Wrap any subtree that might throw during render; the "Try Again" button resets the error state.
+ * Must be a class component because React error boundaries require getDerivedStateFromError.
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - The component subtree to protect
+ * @returns {JSX.Element}
+ */
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -7,14 +15,17 @@ export default class ErrorBoundary extends Component {
     this.reset = this.reset.bind(this);
   }
 
+  // Triggers on any uncaught render error in the subtree; switches to fallback UI.
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
   }
 
+  // Logs the full component stack for debugging; does not affect render path.
   componentDidCatch(error, info) {
     console.error("[ErrorBoundary]", error, info?.componentStack);
   }
 
+  // Clears error state so the child subtree re-mounts and retries rendering.
   reset() {
     this.setState({ hasError: false, error: null });
   }
@@ -22,17 +33,14 @@ export default class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: "40px 32px", textAlign: "center" }}>
-          <h3 style={{ color: "#dc2626", marginBottom: 8 }}>Something went wrong</h3>
-          <p style={{ color: "#6b7280", fontSize: "0.85rem", marginBottom: 20 }}>
+        <div className="error-boundary-wrap">
+          <h3 className="error-boundary-title">Something went wrong</h3>
+          <p className="error-boundary-msg">
             {this.state.error?.message || "An unexpected error occurred."}
           </p>
           <button
             onClick={this.reset}
-            style={{
-              padding: "8px 20px", background: "#1a56db", color: "#fff",
-              border: "none", borderRadius: 6, cursor: "pointer", fontSize: "0.84rem",
-            }}
+            className="error-boundary-btn"
           >
             Try Again
           </button>

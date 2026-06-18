@@ -1,3 +1,4 @@
+// Available filterable fields, grouped for the optgroup-based field selector
 export const RULE_FIELDS = [
   {
     group: "CUSTOMER",
@@ -33,31 +34,22 @@ export const RULE_FIELDS = [
   },
 ];
 
-const TEXT_OPS = [
-  { value: "equals", label: "Is" },
-  { value: "not_equals", label: "Is not" },
-  { value: "contains", label: "Contains" },
-];
+import { TEXT_OPS, NUMBER_OPS, NUMBER_FIELDS } from '../../config/constants';
 
-const NUMBER_OPS = [
-  { value: "equals", label: "Is" },
-  { value: "greater_than", label: "Greater than" },
-  { value: "less_than", label: "Less than" },
-  { value: "between", label: "Between" },
-];
-
-const NUMBER_FIELDS = new Set([
-  "quality_score",
-  "order_frequency",
-  "total_spend_ltv",
-  "average_order_value",
-  "credit_utilization",
-  "inventory_volume",
-]);
-
+/**
+ * Returns the appropriate operator set for a given rule field.
+ * Usage: Called by RuleRow to populate the operator dropdown based on the selected field.
+ * @param {string} field - The rule field value (e.g. "country", "total_spend_ltv")
+ * @returns {Array<{value: string, label: string}>} NUMBER_OPS for numeric fields, TEXT_OPS otherwise
+ */
 const getOperators = (field) =>
   field && NUMBER_FIELDS.has(field) ? NUMBER_OPS : TEXT_OPS;
 
+/**
+ * Returns a blank rule object used as the starting state for a new condition row.
+ * Usage: Call when adding a new condition in RuleBuilder or initializing segment rules.
+ * @returns {{ field: string, operator: string, value: string }} Empty rule object
+ */
 const emptyRule = () => ({ field: "", operator: "", value: "" });
 
 const RuleRow = ({ rule, index, onChange, onRemove, showRemove }) => {
@@ -132,6 +124,17 @@ const RuleRow = ({ rule, index, onChange, onRemove, showRemove }) => {
   );
 };
 
+/**
+ * Controlled component that manages an ordered list of filter conditions and an AND/OR match mode.
+ * Usage: Use in segment creation/editing modals to build the rules array for a segment.
+ * All mutations are lifted to the parent via callback props.
+ * @param {Object} props
+ * @param {Array<{field: string, operator: string, value: string}>} props.rules - Current list of rule conditions
+ * @param {"all"|"any"} props.matchType - Whether all (AND) or any (OR) conditions must match
+ * @param {function} props.onRulesChange - Callback invoked with the updated rules array
+ * @param {function} props.onMatchTypeChange - Callback invoked with the new match type value
+ * @returns {JSX.Element}
+ */
 const RuleBuilder = ({ rules, matchType, onRulesChange, onMatchTypeChange }) => {
   const addRule   = () => onRulesChange([...rules, emptyRule()]);
   const removeRule = (i) => onRulesChange(rules.filter((_, idx) => idx !== i));

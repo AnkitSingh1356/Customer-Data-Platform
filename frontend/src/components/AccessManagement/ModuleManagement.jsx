@@ -1,3 +1,5 @@
+// Manages application modules — the top-level groupings that own permissions.
+// Creating a module auto-provisions the 6 standard CRUD+export+import permissions.
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
@@ -32,7 +34,8 @@ function ModuleModal({ mode, initial, onSave, onClose, loading }) {
               <label>Key * <span className="am-label-hint">(unique slug)</span></label>
               <input
                 value={form.key}
-                onChange={(e) => set("key", e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                // Enforce slug format; key is immutable after creation to preserve FK integrity.
+            onChange={(e) => set("key", e.target.value.toLowerCase().replace(/\s+/g, "-"))}
                 placeholder="e.g. my-module"
                 disabled={mode === "edit"}
               />
@@ -113,6 +116,7 @@ export default function ModuleManagement() {
     finally { setSaving(false); }
   };
 
+  // Toggling a module hides it from the permission matrix without deleting its permissions.
   const handleToggle = async (mod) => {
     try {
       await rbacApi.toggleModuleStatus(mod.id, authHeader());

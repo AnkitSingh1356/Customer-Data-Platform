@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
 
+/**
+ * Formats an ISO date string for display in the "Detected on" table column.
+ * Usage: Used internally by MergeQueueTable to format the detected_on field.
+ * @param {string|null} dateStr - ISO date string or null/undefined
+ * @returns {string} Human-readable date (e.g. "Jun 18, 2025") or "—" for null/undefined values
+ */
 const formatDate = (dateStr) => {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -9,9 +15,22 @@ const formatDate = (dateStr) => {
   });
 };
 
+/**
+ * Renders a table of potential duplicate customer pairs with per-row and bulk merge actions.
+ * Usage: Use in the Identity Resolution page to display and action pending duplicate records.
+ * Row identity is keyed on the customer_id + duplicate_customer_id pair (no single unique id).
+ * @param {Object} props
+ * @param {Object[]} props.rows - Array of duplicate-pair records to display
+ * @param {string} props.search - Current search string value
+ * @param {function} props.setSearch - Callback to update the search string
+ * @param {function} [props.onMerge] - Callback invoked with a single row when the Merge button is clicked
+ * @param {function} [props.onBulkMerge] - Callback invoked with an array of selected rows for bulk merge
+ * @returns {JSX.Element}
+ */
 const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
   const [selected, setSelected] = useState([]);
 
+  // Reset selection whenever the displayed rows change (e.g. after a merge)
   useEffect(() => {
     setSelected([]);
   }, [rows]);
@@ -55,6 +74,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
     }
   };
 
+  // Matches by composite key since rows have no standalone unique id
   const isRowSelected = (row) =>
     selected.some(
       (s) =>
@@ -69,7 +89,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
   };
 
   return (
-    <div className="identity-card" style={{ marginTop: 24 }}>
+    <div className="identity-card ir-merge-table-wrap">
       <div className="table-header">
         <div>
           <h2>Merge Queue</h2>
@@ -91,11 +111,12 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
         </div>
       </div>
 
+      <div className="ir-table-scroll">
       <table className="identity-table">
         <thead>
           <tr>
             {onMerge && (
-              <th style={{ width: 40 }}>
+              <th className="ir-merge-col-check">
                 <input
                   type="checkbox"
                   checked={allSelected}
@@ -117,8 +138,10 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
             const isMerged = row.action === "merged";
             const isDismissed = row.action === "dismissed";
             const isReview = row.action === "review";
+            // Rows with no action value are still pending resolution
             const isPending = !row.action;
 
+            // Map action state to display label and CSS modifier class
             let statusLabel = "Detected";
             let statusClass = "status-badge";
             if (isMerged) { statusLabel = "Merged"; statusClass = "status-badge status-badge-merged"; }
@@ -142,7 +165,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
                 <td>
                   <div>
                     <strong>{row.customer_name}</strong>
-                    <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+                    <p className="ir-merge-cell-meta">
                       {row.customer_email}
                     </p>
                   </div>
@@ -151,7 +174,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
                 <td>
                   <div>
                     <strong>{row.duplicate_name}</strong>
-                    <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+                    <p className="ir-merge-cell-meta">
                       {row.duplicate_email}
                     </p>
                   </div>
@@ -173,7 +196,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
                   <span className={statusClass}>{statusLabel}</span>
                 </td>
 
-                <td style={{ whiteSpace: "nowrap", color: "#6b7280", fontSize: 13 }}>
+                <td className="ir-merge-nowrap">
                   {formatDate(row.detected_on)}
                 </td>
 
@@ -183,7 +206,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
                       Merge
                     </button>
                   ) : (
-                    <span style={{ color: "#9ca3af", fontSize: 13 }}>
+                    <span className="ir-merge-empty">
                       {isMerged ? "Merged" : isDismissed ? "Dismissed" : isReview ? "In Review" : "—"}
                     </span>
                   )}
@@ -193,6 +216,7 @@ const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 };

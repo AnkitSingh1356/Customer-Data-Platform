@@ -1,3 +1,5 @@
+// Dual-panel component: assign menu visibility per role (left) and manage
+// the global menu item catalogue (right).
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
@@ -33,7 +35,8 @@ function MenuModal({ mode, initial, allMenus, onSave, onClose, loading }) {
               <label>Key *</label>
               <input
                 value={form.key}
-                onChange={(e) => set("key", e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                // Enforce slug format; key is immutable after creation (used as DB FK).
+            onChange={(e) => set("key", e.target.value.toLowerCase().replace(/\s+/g, "-"))}
                 placeholder="e.g. my-page"
                 disabled={mode === "edit"}
               />
@@ -81,9 +84,11 @@ export default function MenuManagement() {
   const [menus,        setMenus]        = useState([]);
   const [selectedRole, setSelectedRole] = useState("");
   const [roleData,     setRoleData]     = useState(null);
+  // Set of menu IDs currently granted to the selected role.
   const [checkedKeys,  setCheckedKeys]  = useState(new Set());
   const [loading,      setLoading]      = useState(false);
   const [saving,       setSaving]       = useState(false);
+  // Tracks unsaved checkbox changes so the Save button stays disabled when clean.
   const [dirty,        setDirty]        = useState(false);
   const { toast, showToast } = useToast();
   const [modal,        setModal]        = useState(null);
@@ -103,12 +108,14 @@ export default function MenuManagement() {
     load();
   }, [authHeader, showToast]);
 
+  // Re-fetches the role's current menu assignments whenever the selected role changes.
   const loadRoleMenus = useCallback(async () => {
     if (!selectedRole) return;
     setLoading(true);
     try {
       const rd = await rbacApi.getRole(selectedRole, authHeader());
       setRoleData(rd);
+      // Seed checkbox state from server; resets dirty flag.
       setCheckedKeys(new Set(rd.menus.map((m) => m.id)));
       setDirty(false);
     } catch (e) { showToast(e.message, "error"); }
@@ -137,6 +144,7 @@ export default function MenuManagement() {
     finally { setSaving(false); }
   };
 
+  // After create/edit, refresh the full menu list to reflect ordering changes.
   const handleCreateMenu = async (payload) => {
     setSaving(true);
     try {

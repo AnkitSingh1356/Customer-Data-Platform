@@ -11,11 +11,23 @@ import Pagination from "../../components/common/Pagination";
 import DataTable from "../../components/common/DataTable";
 import KpiCard from "../../components/common/KpiCard";
 
+/**
+ * Returns a human-readable summary of the rules array for display in the segments table.
+ * Usage: Used in the Rules column renderer of the SegmentsPage DataTable.
+ * @param {Array} [rules=[]] - Array of segment rule condition objects
+ * @returns {string} Label such as "No rules", "1 condition (all)", or "3 conditions (all)"
+ */
 const rulesLabel = (rules = []) => {
   if (!rules.length) return "No rules";
   return `${rules.length} condition${rules.length > 1 ? "s" : ""} (all)`;
 };
 
+/**
+ * Formats a number as a locale-formatted string, treating null/undefined as 0.
+ * Usage: Used in the SegmentsPage KPI cards and member count column.
+ * @param {number|null} n - The number to format
+ * @returns {string} Locale-formatted string (e.g. "1,234")
+ */
 const fmtNum = (n) => Number(n ?? 0).toLocaleString();
 
 const SegmentsPage = ({ persona = "admin" }) => {
@@ -81,15 +93,17 @@ const [limit, setLimit] = useState(5);
   const totalMembers    = fmtNum(stats?.total_members    ?? 0);
   const avgSegmentSize  = fmtNum(stats?.avg_segment_size ?? 0);
 
+  // Segments are filtered server-side but paginated client-side from the full result set
   const paginatedSegments = useMemo(() => {
     const start = (page - 1) * limit;
     const end = start + limit;
-  
+
     return segments.slice(start, end);
   }, [segments, page, limit]);
-  
+
   const totalPages = Math.ceil(segments.length / limit) || 1;
-   
+
+  // Clamp the current page when filters shrink the total available pages
   useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages);
