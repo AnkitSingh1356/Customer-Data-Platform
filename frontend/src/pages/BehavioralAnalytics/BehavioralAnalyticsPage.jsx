@@ -25,10 +25,11 @@ import {
   exportAnalytics,
 } from "../../services/behavioralAnalyticsService";
 
-import KpiCard from "../../components/common/KpiCard";
-import DataTable from "../../components/common/DataTable";
-import Pagination from "../../components/common/Pagination";
-import { useRBAC } from "../../auth/RBACContext";
+import KpiCard        from "../../components/common/KpiCard";
+import DataTable      from "../../components/common/DataTable";
+import Pagination     from "../../components/common/Pagination";
+import SelectDropdown from "../../components/common/SelectDropdown";
+import { useRBAC }    from "../../auth/RBACContext";
 import { CHART_COLORS } from '../../config/constants';
 
 import "../../styles/behavioralAnalytics.css";
@@ -312,13 +313,15 @@ function BehavioralAnalyticsPage() {
         </div>
 
         <div className="ba-header-actions">
-          <select value={range} onChange={(e) => setRange(e.target.value)}>
-            <option value="7d">Last 7 Days</option>
-
-            <option value="30d">Last 30 Days</option>
-
-            <option value="90d">Last 90 Days</option>
-          </select>
+          <SelectDropdown
+            value={range}
+            onChange={(val) => setRange(val)}
+            options={[
+              { value: "7d",  label: "Last 7 Days"  },
+              { value: "30d", label: "Last 30 Days" },
+              { value: "90d", label: "Last 90 Days" },
+            ]}
+          />
 
           {hasPermission('behavioral-analytics', 'export') && (
           <button className="ba-export-btn" onClick={handleExport}>

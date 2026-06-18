@@ -139,6 +139,11 @@
   overflow-y: auto;
 }
 
+/* ── Promo table — wide enough to scroll on mobile ──────── */
+.promo-card .app-table {
+  min-width: 800px;
+}
+
 /* ══════════════════════════════════════════════════════
    RESPONSIVE BREAKPOINTS
 ══════════════════════════════════════════════════════ */

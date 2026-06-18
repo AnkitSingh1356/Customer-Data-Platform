@@ -200,7 +200,7 @@
   }
 
 .ir-table-scroll {
-  overflow-x: auto;
+  overflow-x: scroll;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -262,7 +262,7 @@
     text-align: center;
   }
   .ir-merge-table-wrap {
-    overflow-x: auto;
+    overflow-x: scroll;
     -webkit-overflow-scrolling: touch;
   }
   .identity-table {

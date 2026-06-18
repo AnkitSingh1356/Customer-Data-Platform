@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { auditApi } from "../../services/rbacService";
 import { ACTION_META } from "../../config/constants";
+import SelectDropdown from "../common/SelectDropdown";
 
 const ALL_ACTIONS = Object.keys(ACTION_META);
 
@@ -157,16 +158,14 @@ export default function AuditTrail() {
             value={filters.search}
             onChange={(e) => set("search", e.target.value)}
           />
-          <select
-            className="am-filter-select"
+          <SelectDropdown
             value={filters.action}
-            onChange={(e) => set("action", e.target.value)}
-          >
-            <option value="">All Actions</option>
-            {ALL_ACTIONS.map((a) => (
-              <option key={a} value={a}>{ACTION_META[a].label}</option>
-            ))}
-          </select>
+            onChange={(val) => set("action", val)}
+            options={[
+              { value: "", label: "All Actions" },
+              ...ALL_ACTIONS.map((a) => ({ value: a, label: ACTION_META[a].label })),
+            ]}
+          />
           <input
             type="date"
             className="am-filter-select"

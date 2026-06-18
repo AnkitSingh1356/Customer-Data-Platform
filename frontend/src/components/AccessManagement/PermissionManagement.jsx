@@ -5,6 +5,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
 import { useToast } from "../../hooks/useToast";
 import { STANDARD_ACTIONS } from '../../config/constants';
+import SelectDropdown from "../common/SelectDropdown";
 
 export default function PermissionManagement() {
   const { authHeader } = useAuth();
@@ -121,13 +122,11 @@ export default function PermissionManagement() {
       <div className="am-toolbar">
         <div className="am-toolbar-left am-toolbar-gap">
           <label className="am-label-inline">Role:</label>
-          <select
-            className="am-filter-select"
+          <SelectDropdown
             value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value)}
-          >
-            {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
+            onChange={(val) => setSelectedRole(val)}
+            options={roles.map((r) => ({ value: String(r.id), label: r.name }))}
+          />
         </div>
         <button
           className="am-btn am-btn--primary"

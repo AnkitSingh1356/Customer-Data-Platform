@@ -3,6 +3,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
 import UserAccessSummary from "./UserAccessSummary";
 import { CUSTOMER_TYPES } from '../../config/constants';
+import SelectDropdown from "../common/SelectDropdown";
 
 const EMPTY_FORM = {
   full_name: "", email: "", password: "",
@@ -334,10 +335,14 @@ export default function UserManagement() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <select className="am-filter-select" value={filter} onChange={(e) => setFilter(e.target.value)}>
-            <option value="">All Customer Types</option>
-            {CUSTOMER_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+          <SelectDropdown
+            value={filter}
+            onChange={(val) => setFilter(val)}
+            options={[
+              { value: "", label: "All Customer Types" },
+              ...CUSTOMER_TYPES.map((t) => ({ value: t, label: t })),
+            ]}
+          />
         </div>
         <button className="am-btn am-btn--primary" onClick={() => setModal({ type: "create" })}>
           + Add User

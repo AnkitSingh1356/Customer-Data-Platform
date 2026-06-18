@@ -170,13 +170,15 @@
   background: #fff;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .am-table-wrap--scroll { overflow-y: auto; max-height: 400px; }
 
 .am-table {
   width: 100%;
+  min-width: 540px;
   border-collapse: collapse;
   font-size: 0.82rem;
 }
@@ -523,11 +525,13 @@
   background: #fff;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  overflow: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .am-matrix-table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
   font-size: 0.8rem;
 }
@@ -763,17 +767,9 @@
   }
   .am-toolbar > .am-btn { width: 100%; justify-content: center; }
 
-  /* Regular data tables — overflow: hidden clips on mobile; switch to scroll */
-  .am-table-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    overflow-y: visible;
-  }
-  .am-table { min-width: 540px; }
-
-  /* Permission matrix — horizontal scroll; 6 actions×90px + 200px module col = 740px min */
-  .am-matrix-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .am-matrix-table { min-width: 760px; }
+  /* Force always-visible scrollbar on mobile */
+  .am-table-wrap  { overflow-x: scroll; }
+  .am-matrix-wrap { overflow-x: scroll; }
 
   /* Buttons that should stretch on mobile */
   .am-btn--full-mobile { width: 100%; justify-content: center; }

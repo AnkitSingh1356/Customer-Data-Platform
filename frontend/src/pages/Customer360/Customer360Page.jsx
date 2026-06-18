@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import BulkUploadModal from "../../components/BulkUpload/BulkUploadModal";
+import BulkUploadModal      from "../../components/BulkUpload/BulkUploadModal";
 import CustomerProfileModal from "../../components/CustomerProfile/index.jsx";
-import Pagination from "../../components/common/Pagination";
-import DataTable from "../../components/common/DataTable";
+import Pagination           from "../../components/common/Pagination";
+import DataTable            from "../../components/common/DataTable";
+import SelectDropdown       from "../../components/common/SelectDropdown";
 import { BULK_UPLOAD_CONFIG } from "../../config/bulkUploadConfig";
 import apiFetch from "../../services/apiFetch";
 import { useAuth } from "../../auth/AuthContext";
@@ -284,50 +285,54 @@ const Customer360Page = () => {
       <div className="c360-filters">
         <div className="filter-group">
           <label className="filter-label">Customer Type</label>
-          <select
-            className="filter-select"
+          <SelectDropdown
             value={filters.type}
-            onChange={(e) => updateFilter("type", e.target.value)}
-          >
-            <option value="all">All Types</option>
-            <option value="B2C Customer">B2C Customer</option>
-            <option value="Employee">Employee</option>
-            <option value="Dealer">Dealer</option>
-          </select>
+            onChange={(val) => updateFilter("type", val)}
+            options={[
+              { value: "all",          label: "All Types"    },
+              { value: "B2C Customer", label: "B2C Customer" },
+              { value: "Employee",     label: "Employee"     },
+              { value: "Dealer",       label: "Dealer"       },
+            ]}
+          />
         </div>
         <div className="filter-group">
           <label className="filter-label">Status</label>
-          <select
-            className="filter-select"
+          <SelectDropdown
             value={filters.status}
-            onChange={(e) => updateFilter("status", e.target.value)}
-          >
-            <option value="all">All Statuses</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-            <option value="Pending">Pending</option>
-          </select>
+            onChange={(val) => updateFilter("status", val)}
+            options={[
+              { value: "all",      label: "All Statuses" },
+              { value: "Active",   label: "Active"       },
+              { value: "Inactive", label: "Inactive"     },
+              { value: "Pending",  label: "Pending"      },
+            ]}
+          />
         </div>
         <div className="filter-group">
           <label className="filter-label">Source System</label>
-          <select
-            className="filter-select"
+          <SelectDropdown
             value={filters.source}
-            onChange={(e) => updateFilter("source", e.target.value)}
-          >
-            <option value="all">All Sources</option>
-            <option value="Commerce Cloud">Commerce Cloud</option>
-            <option value="Paycom">Paycom</option>
-            <option value="SAP">SAP</option>
-          </select>
+            onChange={(val) => updateFilter("source", val)}
+            options={[
+              { value: "all",            label: "All Sources"    },
+              { value: "Commerce Cloud", label: "Commerce Cloud" },
+              { value: "Paycom",         label: "Paycom"         },
+              { value: "SAP",            label: "SAP"            },
+            ]}
+          />
         </div>
         <div className="filter-group">
           <label className="filter-label">Last Updated</label>
-          <select className="filter-select">
-            <option>Any Time</option>
-            <option>Last 7 days</option>
-            <option>Last 30 days</option>
-          </select>
+          <SelectDropdown
+            value="all"
+            onChange={() => {}}
+            options={[
+              { value: "all", label: "Any Time"     },
+              { value: "7d",  label: "Last 7 days"  },
+              { value: "30d", label: "Last 30 days" },
+            ]}
+          />
         </div>
         <button className="btn-apply-filters" onClick={fetchCustomers}>
           Apply Filters

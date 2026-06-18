@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
+import SelectDropdown from "../common/SelectDropdown";
 
 export default function PageAccessManagement() {
   const { authHeader } = useAuth();
@@ -95,13 +96,11 @@ export default function PageAccessManagement() {
       <div className="am-toolbar">
         <div className="am-toolbar-left am-toolbar-gap">
           <label className="am-label-inline">Role:</label>
-          <select
-            className="am-filter-select"
+          <SelectDropdown
             value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value)}
-          >
-            {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
+            onChange={(val) => setSelectedRole(val)}
+            options={roles.map((r) => ({ value: String(r.id), label: r.name }))}
+          />
         </div>
         <div className="am-toolbar-gap">
           <button className="am-btn am-btn--ghost am-btn--sm" onClick={toggleAll}>

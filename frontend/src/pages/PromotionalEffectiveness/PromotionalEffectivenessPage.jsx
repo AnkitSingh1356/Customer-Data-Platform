@@ -29,13 +29,12 @@ import {
     exportCampaigns,
   } from "../../services/promotionalEffectivenessService";
   
-  import DataTable from "../../components/common/DataTable";
-  
-  import KpiCard from "../../components/common/KpiCard";
-  
-  import ExportButton from "../../components/common/ExportButton";
-  import { useRBAC } from "../../auth/RBACContext";
-  
+  import DataTable      from "../../components/common/DataTable";
+  import KpiCard        from "../../components/common/KpiCard";
+  import ExportButton   from "../../components/common/ExportButton";
+  import SelectDropdown from "../../components/common/SelectDropdown";
+  import { useRBAC }    from "../../auth/RBACContext";
+
 import CampaignDetailsModal from "../../components/PromotionalEffectiveness/CampaignDetailsModal";
 
   import "../../styles/promotionalEffectiveness.css";
@@ -438,30 +437,16 @@ import CampaignDetailsModal from "../../components/PromotionalEffectiveness/Camp
                 }
               />
   
-              <select
+              <SelectDropdown
                 value={status}
-                onChange={(e) =>
-                  setStatus(
-                    e.target.value,
-                  )
-                }
-              >
-                <option value="all">
-                  All Statuses
-                </option>
-  
-                <option value="active">
-                  Active
-                </option>
-  
-                <option value="draft">
-                  Draft
-                </option>
-  
-                <option value="completed">
-                  Completed
-                </option>
-              </select>
+                onChange={(val) => setStatus(val)}
+                options={[
+                  { value: "all",       label: "All Statuses" },
+                  { value: "active",    label: "Active"       },
+                  { value: "draft",     label: "Draft"        },
+                  { value: "completed", label: "Completed"    },
+                ]}
+              />
             </div>
           </div>
   
