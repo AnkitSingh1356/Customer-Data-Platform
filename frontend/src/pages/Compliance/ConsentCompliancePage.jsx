@@ -3,11 +3,12 @@ import { useRBAC } from "../../auth/RBACContext";
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
-import KpiCard from "../../components/common/KpiCard";
-import DataTable from "../../components/common/DataTable";
-import Pagination from "../../components/common/Pagination";
-import ExportButton from "../../components/common/ExportButton";
-import Toast from "../../components/common/Toast";
+import KpiCard        from "../../components/common/KpiCard";
+import DataTable      from "../../components/common/DataTable";
+import Pagination     from "../../components/common/Pagination";
+import ExportButton   from "../../components/common/ExportButton";
+import Toast          from "../../components/common/Toast";
+import SelectDropdown from "../../components/common/SelectDropdown";
 
 import ConsentStatusBadge from "../../components/consent-compliance/ConsentStatusBadge";
 import CompliancePolicies from "../../components/consent-compliance/CompliancePolicies";
@@ -510,22 +511,16 @@ return (
             }}
           />
 
-          <select
+          <SelectDropdown
             value={status}
-            onChange={(e) => {
-              setPage(1);
-
-              setStatus(e.target.value);
-            }}
-          >
-            <option value="all">All Statuses</option>
-
-            <option value="granted">Granted</option>
-
-            <option value="revoked">Revoked</option>
-
-            <option value="pending">Pending</option>
-          </select>
+            onChange={(val) => { setPage(1); setStatus(val); }}
+            options={[
+              { value: "all",     label: "All Statuses" },
+              { value: "granted", label: "Granted"      },
+              { value: "revoked", label: "Revoked"      },
+              { value: "pending", label: "Pending"      },
+            ]}
+          />
 
           {canExport && (
           <ExportButton

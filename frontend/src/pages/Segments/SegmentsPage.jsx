@@ -7,9 +7,10 @@ import Toast                 from "../../components/Segments/Toast";
 import { getPermissions }    from "../../config/personaConfig";
 import { useAuth }           from "../../auth/AuthContext";
 import { useRBAC }           from "../../auth/RBACContext";
-import Pagination from "../../components/common/Pagination";
-import DataTable from "../../components/common/DataTable";
-import KpiCard from "../../components/common/KpiCard";
+import Pagination            from "../../components/common/Pagination";
+import DataTable             from "../../components/common/DataTable";
+import KpiCard               from "../../components/common/KpiCard";
+import SelectDropdown        from "../../components/common/SelectDropdown";
 
 /**
  * Returns a human-readable summary of the rules array for display in the segments table.
@@ -302,16 +303,17 @@ const [limit, setLimit] = useState(5);
 }}
           />
         </div>
-        <select
+        <SelectDropdown
           className="seg-filter-select"
           value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="">All Statuses</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="draft">Draft</option>
-        </select>
+          onChange={(val) => setFilterStatus(val)}
+          options={[
+            { value: "",         label: "All Statuses" },
+            { value: "active",   label: "Active"       },
+            { value: "inactive", label: "Inactive"     },
+            { value: "draft",    label: "Draft"        },
+          ]}
+        />
       </div>
 
       {error   && <div className="seg-error-banner">⚠ {error} — using local data.</div>}

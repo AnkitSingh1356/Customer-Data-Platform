@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
 import { useToast } from "../../hooks/useToast";
+import SelectDropdown from "../common/SelectDropdown";
 
 const EMPTY_FORM = { key: "", label: "", icon: "", parent_key: "", sort_order: 0 };
 
@@ -49,12 +50,14 @@ function MenuModal({ mode, initial, allMenus, onSave, onClose, loading }) {
           <div className="am-form-row">
             <div className="am-form-field">
               <label>Parent Key</label>
-              <select value={form.parent_key || ""} onChange={(e) => set("parent_key", e.target.value)}>
-                <option value="">None (top-level)</option>
-                {allMenus.filter((m) => m.key !== form.key).map((m) => (
-                  <option key={m.key} value={m.key}>{m.label}</option>
-                ))}
-              </select>
+              <SelectDropdown
+                value={form.parent_key || ""}
+                onChange={(val) => set("parent_key", val)}
+                options={[
+                  { value: "", label: "None (top-level)" },
+                  ...allMenus.filter((m) => m.key !== form.key).map((m) => ({ value: m.key, label: m.label })),
+                ]}
+              />
             </div>
             <div className="am-form-field">
               <label>Sort Order</label>
@@ -188,13 +191,11 @@ export default function MenuManagement() {
           <div className="am-panel-header">
             <h4>Menu Access by Role</h4>
             <div className="am-toolbar-gap">
-              <select
-                className="am-filter-select"
+              <SelectDropdown
                 value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-              >
-                {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-              </select>
+                onChange={(val) => setSelectedRole(val)}
+                options={roles.map((r) => ({ value: String(r.id), label: r.name }))}
+              />
               <button
                 className="am-btn am-btn--primary am-btn--sm"
                 onClick={handleSave}
