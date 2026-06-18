@@ -1,42 +1,13 @@
-// Modal that displays a full read-only access profile for a single user,
-// covering permissions, menu/page access, security risk level, and audit history.
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi, auditApi } from "../../services/rbacService";
+import { PERM_ACTIONS, CUSTOMER_TYPE_META, ACTION_META, SUMMARY_TABS } from "../../config/constants";
 
-// ─── Constants ────────────────────────────────────────────────
-const PERM_ACTIONS = ["create", "read", "update", "delete", "export", "import"];
-
-const CUSTOMER_TYPE_META = {
-  "Dealer":       { cls: "am-pill--dealer",   label: "Dealer" },
-  "B2B Customer": { cls: "am-pill--b2b",      label: "B2B Customer" },
-  "B2C Customer": { cls: "am-pill--b2c",      label: "B2C Customer" },
-  "Employee":     { cls: "am-pill--employee", label: "Employee" },
-};
-
-const ACTION_META = {
-  USER_CREATED:        { label: "User Created",        color: "#16a34a" },
-  USER_UPDATED:        { label: "User Updated",        color: "#2563eb" },
-  USER_ACTIVATED:      { label: "User Activated",      color: "#16a34a" },
-  USER_DEACTIVATED:    { label: "User Deactivated",    color: "#d97706" },
-  USER_ROLES_UPDATED:  { label: "Roles Changed",       color: "#7c3aed" },
-  ROLE_CREATED:        { label: "Role Created",        color: "#16a34a" },
-  ROLE_UPDATED:        { label: "Role Updated",        color: "#2563eb" },
-  ROLE_DELETED:        { label: "Role Deleted",        color: "#dc2626" },
-  ROLE_CLONED:         { label: "Role Cloned",         color: "#0891b2" },
-  PERMISSIONS_UPDATED: { label: "Permissions Updated", color: "#7c3aed" },
-  MENU_ACCESS_UPDATED: { label: "Menu Access Updated", color: "#7c3aed" },
-  PAGE_ACCESS_UPDATED: { label: "Page Access Updated", color: "#7c3aed" },
-};
-
-const SUMMARY_TABS = [
-  { id: "overview",    label: "Overview" },
-  { id: "permissions", label: "Permissions" },
-  { id: "activity",    label: "Activity & Security" },
-  { id: "history",     label: "Access History" },
-];
-
-// ─── Helpers ──────────────────────────────────────────────────
+/**
+ * Formats a timestamp for display in audit log cells.
+ * @param {string|null} ts - ISO timestamp string or null
+ * @returns {string} Formatted date/time string or "—" if null
+ */
 function fmtDate(ts) {
   if (!ts) return "—";
   return new Date(ts).toLocaleString(undefined, {
@@ -45,14 +16,24 @@ function fmtDate(ts) {
   });
 }
 
+/**
+ * Calculates the number of whole days since a given timestamp.
+ * @param {string|null} ts - ISO timestamp string or null
+ * @returns {number|null} Days elapsed, or null if ts is absent
+ */
 function daysSince(ts) {
   if (!ts) return null;
   const ms = Date.now() - new Date(ts).getTime();
   return Math.floor(ms / (1000 * 60 * 60 * 24));
 }
 
-// Derives a security risk level from account status, role assignments, and
-// days since last login. High = inactive or no permissions; Medium = stale login.
+/**
+ * Derives a security risk level from account status, role assignments, and days since last login.
+ * Usage: Used internally by ActivityTab to render the access risk indicator.
+ * @param {Object} user - User object with is_active, last_login, and roles fields
+ * @param {Object} access - RBAC access object with permissions array and is_admin flag
+ * @returns {{ level: "High"|"Medium"|"Low", color: string, bg: string }} Risk metadata
+ */
 function riskLevel(user, access) {
   if (!user.is_active) return { level: "High", color: "#dc2626", bg: "#fef2f2" };
   const roles = access?.permissions?.length > 0 || access?.is_admin;
@@ -63,7 +44,14 @@ function riskLevel(user, access) {
   return { level: "Low", color: "#16a34a", bg: "#f0fdf4" };
 }
 
-// ─── Small sub-components ─────────────────────────────────────
+/**
+ * Renders a single stat card showing a numeric value and a label.
+ * Usage: Used in the UserAccessSummary stats row to surface key access metrics.
+ * @param {Object} props
+ * @param {string|number} props.value - The primary metric value
+ * @param {string} props.label - The metric label (e.g. "Modules", "Permissions")
+ * @returns {JSX.Element}
+ */
 function StatCard({ value, label }) {
   return (
     <div className="uas-stat-card">
@@ -73,6 +61,13 @@ function StatCard({ value, label }) {
   );
 }
 
+/**
+ * Renders a colored badge pill for an audit action type.
+ * Usage: Used in audit log tables to display action labels with their associated color.
+ * @param {Object} props
+ * @param {string} props.action - Audit action key (e.g. "USER_ROLES_UPDATED")
+ * @returns {JSX.Element}
+ */
 function ActionBadge({ action }) {
   const meta = ACTION_META[action] || { label: action, color: "#6b7280" };
   return (
@@ -85,13 +80,26 @@ function ActionBadge({ action }) {
   );
 }
 
+/**
+ * Renders a checkmark or cross icon indicating whether a permission is granted.
+ * Usage: Used in the permissions matrix table to show granted/denied status per action.
+ * @param {Object} props
+ * @param {boolean} props.granted - True renders a green checkmark; false renders a red cross
+ * @returns {JSX.Element}
+ */
 function CheckIcon({ granted }) {
   return granted
     ? <span className="uas-check uas-check--yes">✓</span>
     : <span className="uas-check uas-check--no">✗</span>;
 }
 
-// ─── Tab: Overview ────────────────────────────────────────────
+/**
+ * Renders the Overview tab of UserAccessSummary with the permissions matrix, menu access, and restricted items.
+ * Usage: Rendered internally by UserAccessSummary when the "overview" tab is active.
+ * @param {Object} props
+ * @param {Object} props.summary - Full access summary object from the RBAC API
+ * @returns {JSX.Element}
+ */
 function OverviewTab({ summary }) {
   const { access, all_modules, all_menus, restricted_modules, restricted_pages, user } = summary;
 
@@ -117,7 +125,7 @@ function OverviewTab({ summary }) {
       {/* Effective Permissions Matrix */}
       <div className="uas-section">
         <h4 className="uas-section-title">Effective Permissions</h4>
-        <div className="am-table-wrap am-summary-table-wrap">
+        <div className="am-table-wrap am-summary-overflow-x">
           <table className="am-matrix-table">
             <thead>
               <tr>
@@ -125,6 +133,7 @@ function OverviewTab({ summary }) {
                 {PERM_ACTIONS.map((a) => (
                   <th key={a} className="am-matrix-action-col am-col-capitalize">{a}</th>
                 ))}
+
               </tr>
             </thead>
             <tbody>
@@ -205,7 +214,7 @@ function OverviewTab({ summary }) {
           <div className="uas-section">
             <h4 className="uas-section-title">Restricted Modules</h4>
             {restricted_modules.length === 0 ? (
-              <p className="am-text-muted" style={{ fontSize: "0.82rem" }}>None — full module access.</p>
+              <p className="am-text-muted am-text-sm">None — full module access.</p>
             ) : (
               <div className="uas-tag-list">
                 {restricted_modules.map((m) => (
@@ -217,7 +226,7 @@ function OverviewTab({ summary }) {
           <div className="uas-section">
             <h4 className="uas-section-title">Restricted Pages</h4>
             {restricted_pages.length === 0 ? (
-              <p className="am-text-muted" style={{ fontSize: "0.82rem" }}>None — full page access.</p>
+              <p className="am-text-muted am-text-sm">None — full page access.</p>
             ) : (
               <div className="uas-tag-list">
                 {restricted_pages.map((p) => (
@@ -232,7 +241,13 @@ function OverviewTab({ summary }) {
   );
 }
 
-// ─── Tab: Permissions ─────────────────────────────────────────
+/**
+ * Renders the Permissions tab showing consolidated effective access and per-role permission sources.
+ * Usage: Rendered internally by UserAccessSummary when the "permissions" tab is active.
+ * @param {Object} props
+ * @param {Object} props.summary - Full access summary object from the RBAC API
+ * @returns {JSX.Element}
+ */
 function PermissionsTab({ summary }) {
   const { access, permission_sources } = summary;
 
@@ -354,7 +369,13 @@ function PermissionsTab({ summary }) {
   );
 }
 
-// ─── Tab: Activity & Security ─────────────────────────────────
+/**
+ * Renders the Activity and Security tab with login history, security risk indicators, and compliance info.
+ * Usage: Rendered internally by UserAccessSummary when the "activity" tab is active.
+ * @param {Object} props
+ * @param {Object} props.summary - Full access summary object with user, access, and audit_summary fields
+ * @returns {JSX.Element}
+ */
 function ActivityTab({ summary }) {
   const { user, access, audit_summary } = summary;
   const risk = riskLevel(user, access);
@@ -426,7 +447,7 @@ function ActivityTab({ summary }) {
             <span className="uas-info-value">
               {(user.roles || []).length > 0
                 ? `${user.roles.length} role${user.roles.length === 1 ? "" : "s"}`
-                : <span style={{ color: "#d97706" }}>No roles assigned</span>}
+                : <span className="am-warning">No roles assigned</span>}
             </span>
           </div>
           <div className="uas-info-item">
@@ -448,11 +469,11 @@ function ActivityTab({ summary }) {
 
       {/* Risk Explanation */}
       <div
-        className="uas-risk-explain"
-        style={{ background: risk.bg, border: `1px solid ${risk.color}30`, borderRadius: 8, padding: "12px 16px" }}
+        className="uas-risk-explain am-risk-card"
+        style={{ background: risk.bg, borderColor: risk.color + "30" }}
       >
-        <span style={{ fontWeight: 700, color: risk.color, marginRight: 8 }}>{risk.level} Risk</span>
-        <span style={{ fontSize: "0.82rem", color: "#374151" }}>
+        <span className="am-risk-label" style={{ color: risk.color }}>{risk.level} Risk</span>
+        <span className="am-risk-desc">
           {risk.level === "Low" && "User is active, has assigned roles, and has logged in recently."}
           {risk.level === "Medium" && (loginDays === null
             ? "User has never logged in — verify account is still required."
@@ -466,7 +487,14 @@ function ActivityTab({ summary }) {
   );
 }
 
-// ─── Tab: Access History ──────────────────────────────────────
+/**
+ * Renders the Access History tab with a paginated audit log filtered to the target user.
+ * Usage: Rendered internally by UserAccessSummary when the "history" tab is active.
+ * Data is loaded on demand when the user clicks "Load Access History" to keep the modal fast.
+ * @param {Object} props
+ * @param {string|number} props.userId - The user ID used to filter the audit log
+ * @returns {JSX.Element}
+ */
 function AccessHistoryTab({ userId }) {
   const { authHeader } = useAuth();
   const [data,    setData]    = useState(null);
@@ -491,7 +519,7 @@ function AccessHistoryTab({ userId }) {
   // Defer the audit API call until the user explicitly opens this tab.
   if (!data && !loading) {
     return (
-      <div className="uas-tab-body" style={{ textAlign: "center", padding: "32px 0" }}>
+      <div className="uas-tab-body am-history-empty">
         <p className="am-text-muted" style={{ marginBottom: 16 }}>
           Access change history is loaded on demand to keep the page fast.
         </p>
@@ -504,7 +532,7 @@ function AccessHistoryTab({ userId }) {
 
   if (loading && !data) {
     return (
-      <div className="uas-tab-body" style={{ textAlign: "center", padding: "32px 0", color: "#9ca3af" }}>
+      <div className="uas-tab-body am-muted-empty">
         Loading access history…
       </div>
     );
@@ -532,14 +560,14 @@ function AccessHistoryTab({ userId }) {
             ) : (
               data.logs.map((log) => (
                 <tr key={log.id}>
-                  <td className="am-text-muted" style={{ whiteSpace: "nowrap", fontSize: "12px" }}>
+                  <td className="am-text-muted am-nowrap-sm">
                     {fmtDate(log.created_at)}
                   </td>
                   <td><ActionBadge action={log.action} /></td>
                   <td>
                     {log.performed_by_name
-                      ? <span className="am-user-cell" style={{ gap: 6 }}>
-                          <span className="am-avatar" style={{ width: 24, height: 24, fontSize: 10 }}>
+                      ? <span className="am-user-cell am-icon-action-row">
+                          <span className="am-avatar am-icon-btn-xs">
                             {log.performed_by_name.charAt(0).toUpperCase()}
                           </span>
                           {log.performed_by_name}
@@ -566,32 +594,41 @@ function AccessHistoryTab({ userId }) {
   );
 }
 
+/**
+ * Renders a compact human-readable diff for a single access history log entry.
+ * Usage: Used internally by AccessHistoryTab for the Changes column.
+ * @param {Object} props
+ * @param {string} props.action - Audit action type (e.g. "USER_ROLES_UPDATED")
+ * @param {Object|null} props.oldValue - Previous value snapshot
+ * @param {Object|null} props.newValue - New value snapshot
+ * @returns {JSX.Element}
+ */
 function HistoryChangeSummary({ action, oldValue, newValue }) {
   if (!oldValue && !newValue) return <span className="am-text-muted">—</span>;
   if (action === "USER_ROLES_UPDATED") {
     const oldRoles = oldValue?.roles ?? [];
     const newRoles = newValue?.roles ?? [];
     return (
-      <div style={{ fontSize: "11px", lineHeight: "1.5" }}>
-        {oldRoles.length > 0 && <div style={{ color: "#dc2626" }}>− {oldRoles.join(", ")}</div>}
-        {newRoles.length > 0 && <div style={{ color: "#16a34a" }}>+ {newRoles.join(", ")}</div>}
-        {newRoles.length === 0 && <div style={{ color: "#6b7280" }}>All roles removed</div>}
+      <div className="am-change-sm">
+        {oldRoles.length > 0 && <div className="am-change-removed">− {oldRoles.join(", ")}</div>}
+        {newRoles.length > 0 && <div className="am-change-added">+ {newRoles.join(", ")}</div>}
+        {newRoles.length === 0 && <div className="am-change-label">All roles removed</div>}
       </div>
     );
   }
   const combined = { ...oldValue, ...newValue };
   return (
-    <div style={{ fontSize: "11px", lineHeight: "1.6" }}>
+    <div className="am-change-diff">
       {Object.entries(combined).map(([key]) => (
         <div key={key}>
-          <span style={{ color: "#6b7280" }}>{key}: </span>
+          <span className="am-change-label">{key}: </span>
           {oldValue?.[key] !== undefined && (
-            <span style={{ color: "#dc2626", textDecoration: "line-through", marginRight: 4 }}>
+            <span className="am-change-removed">
               {String(oldValue[key])}
             </span>
           )}
           {newValue?.[key] !== undefined && (
-            <span style={{ color: "#16a34a" }}>{String(newValue[key])}</span>
+            <span className="am-change-added">{String(newValue[key])}</span>
           )}
         </div>
       ))}
@@ -599,7 +636,15 @@ function HistoryChangeSummary({ action, oldValue, newValue }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────
+/**
+ * Modal that displays a full read-only access profile for a single user.
+ * Usage: Open from the UserManagement table by clicking a user's "Summary" action button.
+ * Covers permissions matrix, menu/page access, security risk level, and access history tabs.
+ * @param {Object} props
+ * @param {Object} props.user - The user object whose access summary is being displayed
+ * @param {function} props.onClose - Callback invoked when the modal is dismissed
+ * @returns {JSX.Element}
+ */
 export default function UserAccessSummary({ user, onClose }) {
   const { authHeader } = useAuth();
   const [summary,    setSummary]    = useState(null);
@@ -632,13 +677,13 @@ export default function UserAccessSummary({ user, onClose }) {
         </div>
 
         {loading && (
-          <div style={{ padding: "60px 0", textAlign: "center", color: "#9ca3af" }}>
+          <div className="am-muted-empty">
             Loading summary…
           </div>
         )}
 
         {error && (
-          <div style={{ padding: "40px 22px" }}>
+          <div className="am-history-wrapper">
             <div className="am-form-error">Failed to load summary: {error}</div>
           </div>
         )}
@@ -651,8 +696,7 @@ export default function UserAccessSummary({ user, onClose }) {
                 <img
                   src={summary.user.avatar_url}
                   alt={summary.user.full_name}
-                  className="uas-avatar-lg"
-                  style={{ objectFit: "cover" }}
+                  className="uas-avatar-lg am-img-cover"
                 />
               ) : (
                 <div className="uas-avatar-lg">
@@ -675,12 +719,12 @@ export default function UserAccessSummary({ user, onClose }) {
                   {user.department && <span>· {user.department}</span>}
                   {user.phone && <span>· {user.phone}</span>}
                 </div>
-                <div className="uas-profile-meta" style={{ marginTop: 2 }}>
+                <div className="uas-profile-meta am-mt-2">
                   <span>Member since {user.created_at}</span>
                   {user.last_login && <span>· Last login {fmtDate(user.last_login)}</span>}
                 </div>
                 {(user.roles || []).length > 0 && (
-                  <div className="am-roles-list" style={{ marginTop: 6 }}>
+                  <div className="am-roles-list am-mt-6">
                     {user.roles.map((r) => (
                       <span key={r.id} className="am-role-tag">{r.name}</span>
                     ))}

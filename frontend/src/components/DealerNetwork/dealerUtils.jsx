@@ -1,4 +1,9 @@
-// Abbreviates revenue for compact display (e.g. $2.3M, $450k)
+/**
+ * Formats a revenue number as an abbreviated string (e.g. "$2.3M", "$450k").
+ * Usage: Used in dealer KPI cards where horizontal space is constrained.
+ * @param {number|null} n - The revenue value to format; null/undefined is treated as 0
+ * @returns {string} Abbreviated formatted string (e.g. "$2.3M", "$450k", "$999")
+ */
 export function fmtRevenue(n) {
   const v = Number(n ?? 0);
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
@@ -6,18 +11,33 @@ export function fmtRevenue(n) {
   return `$${v.toLocaleString()}`;
 }
 
-// Formats revenue as a full locale string for table cells (e.g. $1,234,567)
+/**
+ * Formats a revenue number as a full locale string for table cells (e.g. "$1,234,567").
+ * Usage: Used in dealer detail modals and table cells where full precision is needed.
+ * @param {number|null} n - The revenue value to format; null/undefined is treated as 0
+ * @returns {string} Full locale-formatted currency string (e.g. "$1,234,567")
+ */
 export function fmtRevenueTable(n) {
   const v = Number(n ?? 0);
   return `$${v.toLocaleString()}`;
 }
 
-// Returns a locale-formatted integer string, treating null/undefined as 0
+/**
+ * Formats a number as a locale-formatted integer string, treating null/undefined as 0.
+ * Usage: Used in dealer KPI cards to display counts (e.g. "1,234").
+ * @param {number|null} n - The number to format
+ * @returns {string} Locale-formatted integer string (e.g. "1,234")
+ */
 export function fmtNum(n) {
   return Number(n ?? 0).toLocaleString();
 }
 
-/* Tier badge class */
+/**
+ * Returns the CSS modifier class for a dealer tier badge.
+ * Usage: Apply the returned class to tier pill elements in dealer tables and modals.
+ * @param {string} [tier=""] - Dealer tier string (e.g. "platinum", "gold", "silver")
+ * @returns {string} CSS class name (e.g. "dn-tier-platinum", "dn-tier-standard" for unknown tiers)
+ */
 export function tierClass(tier = "") {
   const t = tier.toLowerCase();
   if (t === "platinum") return "dn-tier-platinum";

@@ -3,8 +3,15 @@ import apiFetch from "../../services/apiFetch";
 
 const BASE = `${import.meta.env.VITE_API_BASE_URL}/api/segments`;
 
-// Manages segment list, aggregate stats, and full CRUD for the Segments page.
-// Accepts optional search and status filters; refetches when either changes.
+/**
+ * Manages the segment list, aggregate stats, and full CRUD operations for the Segments page.
+ * Usage: Use in SegmentsPage to drive the segment table and KPI cards; refetches when search or status changes.
+ * @param {Object} [options={}]
+ * @param {string} [options.search=""] - Full-text search string to filter segments
+ * @param {string} [options.status=""] - Status filter ("active", "inactive", "draft", or "" for all)
+ * @returns {{ segments: Object[], stats: Object|null, loading: boolean, error: string,
+ *   refetch: function, createSegment: function, updateSegment: function, deleteSegment: function }}
+ */
 export function useSegments({ search = "", status = "" } = {}) {
   const [segments,  setSegments]  = useState([]);
   const [stats,     setStats]     = useState(null);

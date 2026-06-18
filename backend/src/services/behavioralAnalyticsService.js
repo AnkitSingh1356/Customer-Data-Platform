@@ -1,7 +1,12 @@
 const pool = require("../config/db");
 const { BOUNCE_THRESHOLD_SECONDS, TOP_PAGES_LIMIT, ACTIVITY_DEFAULT_LIMIT, ACTIVITY_MAX_LIMIT, ANALYTICS_EXPORT_LIMIT } = require("../config/constants");
 
-// Converts a range string (e.g. "7d") to an integer number of days for SQL
+/**
+ * Converts a range string (e.g. "7d") to an integer number of days for use in SQL intervals.
+ * Usage: Called internally by all behavioral analytics query functions
+ * @param {string} [range="30d"] - One of "7d", "30d", or "90d"
+ * @returns {number} Number of days corresponding to the range (defaults to 30)
+ */
 function getDateFilter(range = "30d") {
   switch (range) {
     case "7d":
@@ -15,7 +20,14 @@ function getDateFilter(range = "30d") {
   }
 }
 
-// Returns aggregated KPIs — sessions, avg duration, bounce rate, conversion rate
+/**
+ * Returns aggregated KPIs for the overview panel: total sessions, average session duration,
+ * bounce rate, and conversion rate for the requested time window.
+ * Usage: Called by behavioralAnalyticsController.getOverview
+ * @param {Object} opts - Query options
+ * @param {string} [opts.range="30d"] - Time window ("7d", "30d", or "90d")
+ * @returns {Promise<{ total_sessions: string, avg_session_duration: string, bounce_rate: string, conversion_rate: string }>}
+ */
 async function getOverview({ range = "30d" }) {
   const days = getDateFilter(range);
 
@@ -67,7 +79,13 @@ async function getOverview({ range = "30d" }) {
   return result.rows[0];
 }
 
-// Returns daily unique-session counts for charting engagement trends over time
+/**
+ * Returns daily unique-session counts for charting engagement trends over the requested period.
+ * Usage: Called by behavioralAnalyticsController.getEngagement
+ * @param {Object} opts - Query options
+ * @param {string} [opts.range="30d"] - Time window ("7d", "30d", or "90d")
+ * @returns {Promise<Array<{ label: string, sessions: number }>>} Daily session counts ordered by date
+ */
 async function getEngagement({ range = "30d" }) {
   const days = getDateFilter(range);
 
@@ -88,7 +106,13 @@ async function getEngagement({ range = "30d" }) {
    TOP PAGES
 ========================================================= */
 
-// Returns the five most-viewed URLs within the requested period
+/**
+ * Returns the most-viewed page URLs within the requested period, limited to TOP_PAGES_LIMIT results.
+ * Usage: Called by behavioralAnalyticsController.getTopPages
+ * @param {Object} opts - Query options
+ * @param {string} [opts.range="30d"] - Time window ("7d", "30d", or "90d")
+ * @returns {Promise<Array<{ page: string, views: string }>>} Top pages ordered by view count descending
+ */
 async function getTopPages({ range = "30d" }) {
   const days = getDateFilter(range);
 
@@ -117,7 +141,13 @@ async function getTopPages({ range = "30d" }) {
   return result.rows;
 }
 
-// Aggregates event counts by traffic_source for the pie/bar chart breakdown
+/**
+ * Aggregates event counts by traffic_source for the pie/bar chart breakdown.
+ * Usage: Called by behavioralAnalyticsController.getTrafficSources
+ * @param {Object} opts - Query options
+ * @param {string} [opts.range="30d"] - Time window ("7d", "30d", or "90d")
+ * @returns {Promise<Array<{ name: string, value: string }>>} Traffic sources ordered by event count descending
+ */
 async function getTrafficSources({ range = "30d" }) {
   const days = getDateFilter(range);
 
@@ -145,7 +175,16 @@ async function getTrafficSources({ range = "30d" }) {
 }
 
 
-// Returns a paginated activity feed with computed initials for avatar display
+/**
+ * Returns a paginated activity feed with computed avatar initials for display.
+ * Usage: Called by behavioralAnalyticsController.getActivities
+ * @param {Object} opts - Query and pagination options
+ * @param {string} [opts.search=""] - Full-text search across user_name, event_type, city, country
+ * @param {number} [opts.page=1] - Page number (1-based)
+ * @param {number} [opts.limit=ACTIVITY_DEFAULT_LIMIT] - Records per page (capped at ACTIVITY_MAX_LIMIT)
+ * @param {string} [opts.range="30d"] - Time window ("7d", "30d", or "90d")
+ * @returns {Promise<{ rows: Array<Object>, total: number, page: number, limit: number, totalPages: number }>}
+ */
 async function getActivities({
   search = "",
   page = 1,
@@ -251,7 +290,13 @@ async function getActivities({
 }
 
 
-// Fetches raw event rows for CSV export; capped at 50 000 rows to limit memory use
+/**
+ * Fetches raw event rows for CSV export, capped at ANALYTICS_EXPORT_LIMIT rows to limit memory use.
+ * Usage: Called by behavioralAnalyticsController.exportAnalytics
+ * @param {Object} opts - Export options
+ * @param {string} [opts.range="30d"] - Time window ("7d", "30d", or "90d")
+ * @returns {Promise<Array<Object>>} Event rows with all exportable columns
+ */
 async function exportAnalytics({
   range = "30d",
 }) {

@@ -1,8 +1,13 @@
 const { createJob, processUpload, getJob } = require("../services/bulkUploadService");
 const { buildTemplateCsv }                 = require("../utils/csvParser");
 
-// POST /bulk-upload — accepts a multipart CSV file, registers a job record,
-//   then processes rows asynchronously so the HTTP response returns immediately
+/**
+ * Fires an async bulk upload job and immediately returns a job ID for polling.
+ * Usage: Called by Express router on POST /api/bulk-upload
+ * @param {import('express').Request} req - req.file: multipart CSV (field name "file"); req.body unused
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends 202 JSON: { jobId, message } on success; 400 if no file; 500 on failure
+ */
 async function startBulkUpload(req, res) {
   // Multer attaches the file to req.file; reject early if none was provided
   if (!req.file) {
@@ -29,8 +34,13 @@ async function startBulkUpload(req, res) {
   }
 }
 
-// GET /bulk-upload/:jobId — polls processing progress; clients use this to
-//   track row counts, failure details, and completion state
+/**
+ * Returns the current processing state of a bulk upload job, including row counts and per-row errors.
+ * Usage: Called by Express router on GET /api/bulk-upload/:jobId
+ * @param {import('express').Request} req - req.params.jobId: ID returned from startBulkUpload
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { jobId, filename, status, total_rows, success_count, failed_count, error_log, created_at, completed_at }; 404 if not found; 500 on failure
+ */
 async function getUploadStatus(req, res) {
   const { jobId } = req.params;
   if (!jobId) return res.status(400).json({ error: "Missing jobId." });
@@ -57,8 +67,13 @@ async function getUploadStatus(req, res) {
   }
 }
 
-// GET /bulk-upload/template — streams a pre-formatted CSV with the required
-//   column headers so users know how to structure their upload file
+/**
+ * Streams a pre-formatted CSV template with the required column headers for bulk upload.
+ * Usage: Called by Express router on GET /api/bulk-upload/template
+ * @param {import('express').Request} req - No parameters used
+ * @param {import('express').Response} res - Express response object
+ * @returns {void} Sends a text/csv attachment: customer_upload_template.csv
+ */
 function downloadTemplate(req, res) {
   const csv = buildTemplateCsv();
   res.setHeader("Content-Type", "text/csv");

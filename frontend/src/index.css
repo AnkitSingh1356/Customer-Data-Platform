@@ -2871,6 +2871,8 @@ width: 100%;
 .error-boundary-wrap { padding: 40px 32px; text-align: center; }
 .error-boundary-title { color: #dc2626; margin-bottom: 8px; }
 .error-boundary-msg { color: #6b7280; font-size: 0.85rem; margin-bottom: 20px; }
+.error-boundary-btn { padding: 8px 20px; background: #1a56db; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.84rem; }
+.m-20 { margin: 20px; }
 
 .icon-chevron { transition: transform 0.18s; }
 .icon-chevron--open { transform: rotate(180deg); }

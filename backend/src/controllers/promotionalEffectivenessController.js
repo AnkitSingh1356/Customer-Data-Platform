@@ -1,6 +1,12 @@
 const promotionalService = require("../services/promotionalEffectivenessService");
 
-// Returns top-level campaign performance metrics (total spend, impressions, conversions)
+/**
+ * Returns top-level campaign performance metrics (total spend, impressions, conversions).
+ * Usage: Called by Express router on GET /api/promotions/overview
+ * @param {import('express').Request} _req - No parameters used
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const getOverview = async (_req, res) => {
   try {
     const data = await promotionalService.getOverview();
@@ -19,7 +25,13 @@ const getOverview = async (_req, res) => {
   }
 };
 
-// Returns campaigns filtered by name/status; status supports: all, active, paused, ended
+/**
+ * Returns campaigns filtered by name/status.
+ * Usage: Called by Express router on GET /api/promotions/campaigns
+ * @param {import('express').Request} req - req.query: { search, status (all|active|paused|ended) }
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const getCampaigns = async (req, res) => {
   try {
     const {
@@ -47,7 +59,13 @@ const getCampaigns = async (req, res) => {
   }
 };
 
-// Returns budget vs. actual spend breakdown across campaigns for ROI analysis
+/**
+ * Returns budget vs. actual spend breakdown across campaigns for ROI analysis.
+ * Usage: Called by Express router on GET /api/promotions/budget-performance
+ * @param {import('express').Request} _req - No parameters used
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const getBudgetPerformance = async (_req, res) => {
   try {
     const data =
@@ -68,7 +86,13 @@ const getBudgetPerformance = async (_req, res) => {
   }
 };
 
-// Returns campaign count grouped by status for dashboard pie/bar chart display
+/**
+ * Returns campaign count grouped by status for dashboard pie/bar chart display.
+ * Usage: Called by Express router on GET /api/promotions/status-distribution
+ * @param {import('express').Request} _req - No parameters used
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const getStatusDistribution = async (_req, res) => {
   try {
     const data =
@@ -89,7 +113,13 @@ const getStatusDistribution = async (_req, res) => {
   }
 };
 
-// Exports all campaign records (no filters) for offline reporting or data transfer
+/**
+ * Exports all campaign records (no filters) for offline reporting or data transfer.
+ * Usage: Called by Express router on GET /api/promotions/export
+ * @param {import('express').Request} _req - No parameters used
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const exportCampaigns = async (_req, res) => {
   try {
     const data =

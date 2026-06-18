@@ -2,12 +2,28 @@ const pool       = require("../config/db");
 const bcrypt     = require("bcryptjs");
 const { SALT_ROUNDS, DEFAULT_PAGE_LIMIT, DEFAULT_ROLES_LIMIT, STANDARD_PERMISSION_ACTIONS } = require("../config/constants");
 
+/**
+ * Creates a new Error with an attached HTTP status code for consistent error handling.
+ * Usage: Thrown throughout rbacService to produce structured API errors
+ * @param {string} msg - Human-readable error message
+ * @param {number} [status=400] - HTTP status code to attach
+ * @returns {Error} Error instance with a status property
+ */
 function err(msg, status = 400) {
   return Object.assign(new Error(msg), { status });
 }
 
 
-// Returns paginated users with their assigned RBAC roles aggregated as JSON.
+/**
+ * Returns paginated users with their assigned RBAC roles aggregated as a JSON array.
+ * Usage: Called by rbacController.getUsers
+ * @param {Object} [opts={}] - Filter and pagination options
+ * @param {number} [opts.page=1] - Page number (1-based)
+ * @param {number} [opts.limit=DEFAULT_PAGE_LIMIT] - Records per page
+ * @param {string} [opts.search=""] - Partial match on full_name or email
+ * @param {string} [opts.customer_type=""] - Filter by customer_type (exact match)
+ * @returns {Promise<{ users: Array<Object>, total: number, page: number, limit: number }>}
+ */
 async function getUsers({ page = 1, limit = DEFAULT_PAGE_LIMIT, search = "", customer_type = "" } = {}) {
   const offset = (Number(page) - 1) * Number(limit);
   const params = [];
@@ -56,6 +72,12 @@ async function getUsers({ page = 1, limit = DEFAULT_PAGE_LIMIT, search = "", cus
   };
 }
 
+/**
+ * Returns a single user with their RBAC roles aggregated as a JSON array, or null if not found.
+ * Usage: Called internally and by rbacController.getUserById
+ * @param {number} id - User primary key
+ * @returns {Promise<Object|null>} User row with roles array, or null
+ */
 async function getUserById(id) {
   const res = await pool.query(
     `SELECT u.id, u.full_name, u.email, u.role, u.customer_type,
@@ -75,6 +97,19 @@ async function getUserById(id) {
   return res.rows[0] ?? null;
 }
 
+/**
+ * Creates a new user account with a hashed password, defaulting to the 'viewer' role.
+ * Usage: Called by rbacController.createUser
+ * @param {Object} opts - New user fields
+ * @param {string} opts.full_name - Required display name
+ * @param {string} opts.email - Required unique email address
+ * @param {string} opts.password - Required plaintext password (hashed before storage)
+ * @param {string} [opts.role="viewer"] - RBAC role string
+ * @param {string} [opts.customer_type="Employee"] - Customer type
+ * @param {string} [opts.department] - Optional department
+ * @param {string} [opts.phone] - Optional phone number
+ * @returns {Promise<Object>} Newly created user row (without password_hash)
+ */
 async function createUser({ full_name, email, password, role, customer_type, department, phone }) {
   if (!full_name?.trim() || !email?.trim() || !password) {
     throw err("full_name, email, and password are required.");
@@ -109,6 +144,19 @@ async function createUser({ full_name, email, password, role, customer_type, dep
   }
 }
 
+/**
+ * Applies a partial update to a user record using only the provided fields.
+ * Usage: Called by rbacController.updateUser
+ * @param {number} id - User primary key
+ * @param {Object} opts - Fields to update (only defined properties are applied)
+ * @param {string} [opts.full_name] - Display name
+ * @param {string} [opts.email] - Unique email address
+ * @param {string} [opts.role] - RBAC role string
+ * @param {string} [opts.customer_type] - Customer type
+ * @param {string} [opts.department] - Department
+ * @param {string} [opts.phone] - Phone number
+ * @returns {Promise<Object>} Updated user row (without password_hash)
+ */
 async function updateUser(id, { full_name, email, role, customer_type, department, phone }) {
   const fields = [];
   const params = [];
@@ -139,6 +187,12 @@ async function updateUser(id, { full_name, email, role, customer_type, departmen
   }
 }
 
+/**
+ * Toggles the is_active flag on a user account (activate/deactivate).
+ * Usage: Called by rbacController.toggleUserStatus
+ * @param {number} id - User primary key
+ * @returns {Promise<{ id: number, full_name: string, email: string, is_active: boolean }>}
+ */
 async function toggleUserStatus(id) {
   const res = await pool.query(
     `UPDATE users SET is_active = NOT is_active, updated_at = NOW()
@@ -150,8 +204,14 @@ async function toggleUserStatus(id) {
   return res.rows[0];
 }
 
-// Replaces a user's role assignments atomically: existing roles are cleared
-// before the new set is inserted to keep the mapping in sync.
+/**
+ * Replaces a user's role assignments atomically: existing roles are cleared before the
+ * new set is inserted to keep the user_roles table in sync.
+ * Usage: Called by rbacController.assignUserRoles
+ * @param {number} userId - User primary key
+ * @param {Array<number>} [roleIds=[]] - Complete list of role IDs to assign
+ * @returns {Promise<Object>} Updated user row with new roles array
+ */
 async function assignUserRoles(userId, roleIds = []) {
   const client = await pool.connect();
   try {
@@ -177,6 +237,15 @@ async function assignUserRoles(userId, roleIds = []) {
 
 // ─── Role Management ────────────────────────────────────────────
 
+/**
+ * Returns paginated RBAC roles with a user_count for each role.
+ * Usage: Called by rbacController.getRoles
+ * @param {Object} [opts={}] - Filter and pagination options
+ * @param {number} [opts.page=1] - Page number (1-based)
+ * @param {number} [opts.limit=DEFAULT_ROLES_LIMIT] - Records per page
+ * @param {string} [opts.search=""] - Partial match on role name or description
+ * @returns {Promise<{ roles: Array<Object>, total: number, page: number, limit: number }>}
+ */
 async function getRoles({ page = 1, limit = DEFAULT_ROLES_LIMIT, search = "" } = {}) {
   const offset = (Number(page) - 1) * Number(limit);
   const params = [];
@@ -211,8 +280,13 @@ async function getRoles({ page = 1, limit = DEFAULT_ROLES_LIMIT, search = "" } =
   };
 }
 
-// Returns a role with its full permission, menu, and page assignments resolved.
-// Permissions are joined through rbac_modules so callers get module context.
+/**
+ * Returns a role with its full permission, menu, and page assignments resolved.
+ * Permissions are joined through rbac_modules so callers receive module context.
+ * Usage: Called by rbacController.getRoleById and internally by cloneRole
+ * @param {number} id - Role primary key
+ * @returns {Promise<Object>} Role row augmented with permissions, menus, and pages arrays
+ */
 async function getRoleById(id) {
   const res = await pool.query(
     `SELECT r.*,
@@ -252,6 +326,14 @@ async function getRoleById(id) {
   return { ...role, permissions: perms.rows, menus: menus.rows, pages: pages.rows };
 }
 
+/**
+ * Creates a new RBAC role with an optional description.
+ * Usage: Called by rbacController.createRole
+ * @param {Object} opts - Role creation data
+ * @param {string} opts.name - Required unique role name
+ * @param {string} [opts.description] - Optional description
+ * @returns {Promise<Object>} Newly created rbac_roles row
+ */
 async function createRole({ name, description }) {
   if (!name?.trim()) throw err("Role name is required.");
   const res = await pool.query(
@@ -261,6 +343,16 @@ async function createRole({ name, description }) {
   return res.rows[0];
 }
 
+/**
+ * Applies a partial update to an RBAC role using only the provided fields.
+ * Usage: Called by rbacController.updateRole
+ * @param {number} id - Role primary key
+ * @param {Object} opts - Fields to update
+ * @param {string} [opts.name] - Role name
+ * @param {string} [opts.description] - Role description
+ * @param {boolean} [opts.is_active] - Active flag
+ * @returns {Promise<Object>} Updated rbac_roles row
+ */
 async function updateRole(id, { name, description, is_active }) {
   const fields = [];
   const params = [];
@@ -282,8 +374,13 @@ async function updateRole(id, { name, description, is_active }) {
   return res.rows[0];
 }
 
-// Deletes a role only if it is not assigned to any users. Uses FOR UPDATE to
-// lock the check and delete in one transaction, preventing a TOCTOU race.
+/**
+ * Deletes a role only if it is not assigned to any users. Uses FOR UPDATE to lock
+ * the check and delete in one transaction, preventing a TOCTOU race.
+ * Usage: Called by rbacController.deleteRole
+ * @param {number} id - Role primary key
+ * @returns {Promise<{ message: string }>} Success confirmation message
+ */
 async function deleteRole(id) {
   const client = await pool.connect();
   try {
@@ -307,9 +404,14 @@ async function deleteRole(id) {
   }
 }
 
-// Duplicates a role and copies all its permission, menu, and page grants
-// atomically. The clone is created with an optional custom name or defaults
-// to "<source name> (Copy)".
+/**
+ * Duplicates a role and copies all its permission, menu, and page grants atomically.
+ * The clone is created with an optional custom name, defaulting to "<source name> (Copy)".
+ * Usage: Called by rbacController.cloneRole
+ * @param {number} id - Source role primary key
+ * @param {string} [newName] - Optional name for the cloned role
+ * @returns {Promise<Object>} The newly created role with all permissions, menus, and pages resolved
+ */
 async function cloneRole(id, newName) {
   const src = await getRoleById(id);
   const client = await pool.connect();
@@ -345,8 +447,16 @@ async function cloneRole(id, newName) {
   }
 }
 
-// Generic helper: replaces all rows in a role-relation join table (permissions,
-// menus, or pages) for a given role in a single transaction.
+/**
+ * Generic helper that replaces all rows in a role-relation join table (permissions,
+ * menus, or pages) for a given role in a single transaction.
+ * Usage: Called internally by setRolePermissions, setRoleMenus, and setRolePages
+ * @param {number} roleId - Role primary key
+ * @param {Array<number>} ids - Complete list of related entity IDs to assign
+ * @param {string} table - Join table name (e.g. "rbac_role_permissions")
+ * @param {string} col - Foreign key column name for the related entity (e.g. "permission_id")
+ * @returns {Promise<void>}
+ */
 async function setRoleRelations(roleId, ids, table, col) {
   const client = await pool.connect();
   try {
@@ -368,22 +478,48 @@ async function setRoleRelations(roleId, ids, table, col) {
   }
 }
 
+/**
+ * Replaces all permission assignments for a role and returns the updated role with full resolution.
+ * Usage: Called by rbacController.setRolePermissions
+ * @param {number} roleId - Role primary key
+ * @param {Array<number>} permissionIds - Complete list of permission IDs to assign
+ * @returns {Promise<Object>} Updated role with permissions, menus, and pages resolved
+ */
 async function setRolePermissions(roleId, permissionIds) {
   await setRoleRelations(roleId, permissionIds, "rbac_role_permissions", "permission_id");
   return getRoleById(roleId);
 }
 
+/**
+ * Replaces all menu assignments for a role and returns the updated role with full resolution.
+ * Usage: Called by rbacController.setRoleMenus
+ * @param {number} roleId - Role primary key
+ * @param {Array<number>} menuIds - Complete list of menu IDs to assign
+ * @returns {Promise<Object>} Updated role with permissions, menus, and pages resolved
+ */
 async function setRoleMenus(roleId, menuIds) {
   await setRoleRelations(roleId, menuIds, "rbac_role_menus", "menu_id");
   return getRoleById(roleId);
 }
 
+/**
+ * Replaces all page assignments for a role and returns the updated role with full resolution.
+ * Usage: Called by rbacController.setRolePages
+ * @param {number} roleId - Role primary key
+ * @param {Array<number>} pageIds - Complete list of page IDs to assign
+ * @returns {Promise<Object>} Updated role with permissions, menus, and pages resolved
+ */
 async function setRolePages(roleId, pageIds) {
   await setRoleRelations(roleId, pageIds, "rbac_role_pages", "page_id");
   return getRoleById(roleId);
 }
 
 
+/**
+ * Returns all RBAC modules ordered by sort_order with a permission_count for each.
+ * Usage: Called by rbacController.getModules
+ * @returns {Promise<Array<Object>>} Module rows each including a permission_count
+ */
 async function getModules() {
   const res = await pool.query(
     `SELECT m.*,
@@ -394,8 +530,17 @@ async function getModules() {
   return res.rows;
 }
 
-// Creates a module and auto-provisions the standard CRUD + export/import
-// permissions for it so new modules are immediately usable in role assignments.
+/**
+ * Creates a new RBAC module and auto-provisions the standard CRUD + export/import permissions
+ * for it so the module is immediately usable in role assignments.
+ * Usage: Called by rbacController.createModule
+ * @param {Object} opts - Module creation data
+ * @param {string} opts.key - Required unique module key
+ * @param {string} opts.label - Required display label
+ * @param {string} [opts.icon] - Icon identifier
+ * @param {number} [opts.sort_order=0] - Display sort order
+ * @returns {Promise<Object>} Newly created rbac_modules row
+ */
 async function createModule({ key, label, icon, sort_order = 0 }) {
   if (!key?.trim() || !label?.trim()) throw err("key and label are required.");
   const res = await pool.query(
@@ -418,6 +563,18 @@ async function createModule({ key, label, icon, sort_order = 0 }) {
   return mod;
 }
 
+/**
+ * Applies a partial update to an RBAC module using only the provided fields.
+ * Usage: Called by rbacController.updateModule
+ * @param {number} id - Module primary key
+ * @param {Object} opts - Fields to update
+ * @param {string} [opts.key] - Module key identifier
+ * @param {string} [opts.label] - Display label
+ * @param {string} [opts.icon] - Icon identifier
+ * @param {number} [opts.sort_order] - Display sort order
+ * @param {boolean} [opts.is_active] - Active flag
+ * @returns {Promise<Object>} Updated rbac_modules row
+ */
 async function updateModule(id, { key, label, icon, sort_order, is_active }) {
   const fields = [];
   const params = [];
@@ -439,6 +596,12 @@ async function updateModule(id, { key, label, icon, sort_order, is_active }) {
   return res.rows[0];
 }
 
+/**
+ * Toggles the is_active flag on an RBAC module (enable/disable).
+ * Usage: Called by rbacController.toggleModuleStatus
+ * @param {number} id - Module primary key
+ * @returns {Promise<Object>} Updated rbac_modules row
+ */
 async function toggleModuleStatus(id) {
   const res = await pool.query(
     `UPDATE rbac_modules SET is_active = NOT is_active WHERE id = $1 RETURNING *`,
@@ -448,6 +611,11 @@ async function toggleModuleStatus(id) {
   return res.rows[0];
 }
 
+/**
+ * Returns all RBAC permissions joined with their parent module, ordered by module sort order.
+ * Usage: Called by rbacController.getPermissions
+ * @returns {Promise<Array<{ id, action, description, module_id, module_key, module_label, sort_order }>>}
+ */
 async function getPermissions() {
   const res = await pool.query(
     `SELECT p.id, p.action, p.description,
@@ -458,6 +626,11 @@ async function getPermissions() {
   );
   return res.rows;
 }
+/**
+ * Returns all RBAC menus ordered by sort_order and label.
+ * Usage: Called by rbacController.getMenus
+ * @returns {Promise<Array<Object>>} Menu rows from rbac_menus
+ */
 async function getMenus() {
   const res = await pool.query(
     `SELECT * FROM rbac_menus ORDER BY sort_order, label`
@@ -465,6 +638,17 @@ async function getMenus() {
   return res.rows;
 }
 
+/**
+ * Creates a new RBAC menu item, optionally nested under a parent menu.
+ * Usage: Called by rbacController.createMenu
+ * @param {Object} opts - Menu creation data
+ * @param {string} opts.key - Required unique menu key
+ * @param {string} opts.label - Required display label
+ * @param {string} [opts.icon] - Icon identifier
+ * @param {string} [opts.parent_key] - Parent menu key for nested items
+ * @param {number} [opts.sort_order=0] - Display sort order
+ * @returns {Promise<Object>} Newly created rbac_menus row
+ */
 async function createMenu({ key, label, icon, parent_key, sort_order = 0 }) {
   if (!key?.trim() || !label?.trim()) throw err("key and label are required.");
   const res = await pool.query(
@@ -475,6 +659,19 @@ async function createMenu({ key, label, icon, parent_key, sort_order = 0 }) {
   return res.rows[0];
 }
 
+/**
+ * Applies a partial update to an RBAC menu item using only the provided fields.
+ * Usage: Called by rbacController.updateMenu
+ * @param {number} id - Menu primary key
+ * @param {Object} opts - Fields to update
+ * @param {string} [opts.key] - Menu key identifier
+ * @param {string} [opts.label] - Display label
+ * @param {string} [opts.icon] - Icon identifier
+ * @param {string} [opts.parent_key] - Parent menu key
+ * @param {number} [opts.sort_order] - Display sort order
+ * @param {boolean} [opts.is_active] - Active flag
+ * @returns {Promise<Object>} Updated rbac_menus row
+ */
 async function updateMenu(id, { key, label, icon, parent_key, sort_order, is_active }) {
   const fields = [];
   const params = [];
@@ -496,15 +693,24 @@ async function updateMenu(id, { key, label, icon, parent_key, sort_order, is_act
   if (!res.rows.length) throw err("Menu item not found.", 404);
   return res.rows[0];
 }
+/**
+ * Returns all RBAC pages ordered by label.
+ * Usage: Called by rbacController.getPages
+ * @returns {Promise<Array<Object>>} Page rows from rbac_pages
+ */
 async function getPages() {
   const res = await pool.query(
     `SELECT * FROM rbac_pages ORDER BY label`
   );
   return res.rows;
 }
-// Resolves the effective permissions, menus, and pages for a user.
-// Admins receive all active permissions unconditionally; other users receive
-// only what is granted through their assigned RBAC roles.
+/**
+ * Resolves the effective permissions, menus, and pages for a user. Admins receive all active
+ * permissions unconditionally; other users receive only what is granted through their assigned roles.
+ * Usage: Called by rbacController.getUserAccess and internally by getUserAccessSummary
+ * @param {number} userId - User primary key
+ * @returns {Promise<{ permissions: Array<Object>, menus: Array<Object>, pages: Array<Object>, customer_type: string, is_admin: boolean }>}
+ */
 async function getUserAccess(userId) {
   const userRes = await pool.query(
     "SELECT role, customer_type FROM users WHERE id = $1",
@@ -578,9 +784,14 @@ async function getUserAccess(userId) {
   };
 }
 
-// Builds a detailed access summary for the user-detail view: combines user
-// info, effective access, all available resources, restricted resource lists,
-// per-role permission sources (for non-admins), and an audit change count.
+/**
+ * Builds a detailed access summary for the user-detail view: combines user info, effective access,
+ * all available resources, restricted resource lists, per-role permission sources (for non-admins),
+ * and an audit change count.
+ * Usage: Called by rbacController.getUserAccessSummary
+ * @param {number} userId - User primary key
+ * @returns {Promise<{ user: Object, access: Object, all_modules: Array, all_menus: Array, all_pages: Array, restricted_modules: Array, restricted_pages: Array, permission_sources: Array, audit_summary: Object }>}
+ */
 async function getUserAccessSummary(userId) {
   const userRes = await pool.query(
     `SELECT u.id, u.full_name, u.email, u.role, u.customer_type,

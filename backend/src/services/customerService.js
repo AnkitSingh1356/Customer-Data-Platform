@@ -1,8 +1,21 @@
 const pool = require("../config/db");
 const { RESTRICTED_CUSTOMER_TYPES } = require("../config/constants");
 
-// Returns a paginated customer list; non-admin restricted viewers see only
-// their own customer_type — returns { customers, total, page, limit }
+/**
+ * Returns a paginated customer list with optional full-text search and role-based row filtering.
+ * Non-admin users whose customer_type is in RESTRICTED_CUSTOMER_TYPES see only their own type.
+ * Usage: Called by customerController.listCustomers
+ * @param {Object} opts - Filter and pagination options
+ * @param {string} [opts.type] - Filter by customer_type ("all" disables the filter)
+ * @param {string} [opts.status] - Filter by status ("all" disables the filter)
+ * @param {string} [opts.source] - Filter by primary_source ("all" disables the filter)
+ * @param {string} [opts.search] - Full-text search across name, email, cdp_id, phone, dealer_code
+ * @param {number} [opts.page=1] - Page number (1-based)
+ * @param {number} [opts.limit=20] - Records per page (capped at 200)
+ * @param {string} [opts.viewerRole] - Role of the requesting user for scoping
+ * @param {string} [opts.viewerCustomerType] - Customer type of the requesting user for scoping
+ * @returns {Promise<{ customers: Array<Object>, total: number, page: number|string, limit: number }>}
+ */
 async function getCustomers({
   type,
   status,
@@ -72,9 +85,16 @@ async function getCustomers({
   return { customers: dataRes.rows, total: parseInt(countRes.rows[0].count, 10), page, limit: safeLimit };
 }
 
-// Returns dashboard KPI stats with period-over-period growth percentages.
-// Applies the same role-scoping as getCustomers so restricted viewers only
-// see metrics for their own customer_type.
+/**
+ * Returns dashboard KPI stats with period-over-period growth percentages.
+ * Applies the same role-scoping as getCustomers so restricted viewers only see metrics
+ * for their own customer_type.
+ * Usage: Called by customerController.getStats
+ * @param {Object} [opts={}] - Scoping options
+ * @param {string} [opts.viewerRole] - Role of the requesting user
+ * @param {string} [opts.viewerCustomerType] - Customer type of the requesting user
+ * @returns {Promise<{ total_customers, total_growth, active_this_month, new_this_week, avg_lifetime_value, active_growth, new_growth, avg_lifetime_growth }>}
+ */
 async function getStats({ viewerRole, viewerCustomerType } = {}) {
   const isRestricted = viewerRole !== "admin" && RESTRICTED_CUSTOMER_TYPES.has(viewerCustomerType);
   const scopeWhere   = isRestricted ? `WHERE customer_type ILIKE $1` : "";

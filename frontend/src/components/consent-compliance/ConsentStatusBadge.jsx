@@ -4,9 +4,8 @@ const ConsentStatusBadge = ({ status = "none", onClick }) => {
   return (
     <span
       // CSS class drives colour: granted=green, revoked=red, pending=amber, none=grey
-      className={`consent-status-badge ${status.toLowerCase()}`}
+      className={`consent-status-badge ${status.toLowerCase()} ${onClick ? "consent-badge--clickable" : "consent-badge--static"}`}
       onClick={onClick}
-      style={{ cursor: onClick ? "pointer" : "default" }}
     >
       {status}
     </span>

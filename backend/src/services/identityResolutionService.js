@@ -1,8 +1,12 @@
 const db = require("../config/db");
 
-// Returns aggregate duplicate-detection stats (counts by action status and
-// average confidence). Active matching rules are loaded at call time so the
-// query always reflects the current rule configuration.
+/**
+ * Returns aggregate duplicate-detection stats: counts by action status (merged, reviewed,
+ * dismissed, needs review) and average confidence score. Active matching rules are loaded
+ * at call time so the query always reflects the current rule configuration.
+ * Usage: Called by identityResolutionController.getDashboard
+ * @returns {Promise<{ totalDuplicates: number, needsReview: number, manualReviewQueue: number, profilesMerged: number, avgConfidence: number, dismissed: number }>}
+ */
 const getDashboard = async () => {
   const rulesResult = await db.query('SELECT id, is_active FROM identity_resolution_rules');
   const rules = rulesResult.rows;
@@ -58,6 +62,11 @@ const getDashboard = async () => {
   };
 };
 
+/**
+ * Returns all identity resolution matching rules with their current active state.
+ * Usage: Called by identityResolutionController.getRules
+ * @returns {Promise<Array<{ id: number, rule_name: string, confidence_score: string, is_active: boolean }>>}
+ */
 const getRules = async () => {
   const query = `
     SELECT
@@ -73,6 +82,12 @@ const getRules = async () => {
   return result.rows;
 };
 
+/**
+ * Toggles the is_active flag on an identity resolution rule and returns the updated row.
+ * Usage: Called by identityResolutionController.toggleRule
+ * @param {number} id - Rule primary key
+ * @returns {Promise<Object>} Updated rule row
+ */
 const toggleRule = async (id) => {
   const query = `
     UPDATE identity_resolution_rules
@@ -85,8 +100,16 @@ const toggleRule = async (id) => {
   return result.rows[0];
 };
 
-// Returns paginated duplicate-match pairs with per-pair confidence scores
-// derived from whichever matching rule triggered the match.
+/**
+ * Returns paginated duplicate-match pairs with per-pair confidence scores derived from
+ * whichever matching rule triggered the match.
+ * Usage: Called by identityResolutionController.getMatches
+ * @param {Object} opts - Query and pagination options
+ * @param {string} opts.search - Partial match on customer or duplicate name/email
+ * @param {number} opts.page - Page number (1-based)
+ * @param {number} opts.limit - Records per page
+ * @returns {Promise<{ rows: Array<Object>, total: number }>} Matched pairs and total count
+ */
 const getMatches = async ({ search, page, limit }) => {
   const offset = (page - 1) * limit;
 
@@ -214,9 +237,17 @@ const getMatches = async ({ search, page, limit }) => {
   };
 };
 
-// Records a merge decision and marks the duplicate customer as 'Merged' in a
-// single atomic transaction. ON CONFLICT updates an existing log entry so
-// re-merging a pair does not create duplicate audit rows.
+/**
+ * Records a merge decision and marks the duplicate customer as 'Merged' in a single
+ * atomic transaction. ON CONFLICT updates an existing log entry so re-merging a pair
+ * does not create duplicate audit rows.
+ * Usage: Called by identityResolutionController.mergeProfiles
+ * @param {Object} opts - Merge parameters
+ * @param {number} opts.customerId - Primary customer to retain
+ * @param {number} opts.duplicateId - Duplicate customer to soft-delete (status → 'Merged')
+ * @param {number} opts.confidenceScore - Confidence score of the triggering match rule
+ * @returns {Promise<Object>} The created or updated identity_resolution_logs row
+ */
 const mergeProfiles = async ({ customerId, duplicateId, confidenceScore }) => {
   const client = await db.connect();
   try {

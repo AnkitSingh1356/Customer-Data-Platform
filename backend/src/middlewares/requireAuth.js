@@ -1,8 +1,15 @@
 const { verifyToken } = require("../services/authService");
 const pool = require("../config/db");
 
-// Validates the Bearer JWT and confirms the account is still active in the DB.
-// Attaches the decoded token payload to req.user for downstream route handlers.
+/**
+ * Express middleware that validates the Bearer JWT and confirms the account is still active in the DB.
+ * Attaches the decoded token payload to req.user for downstream route handlers.
+ * Usage: Applied to all protected API routes via router.use(requireAuth)
+ * @param {import('express').Request} req - Express request (expects Authorization: Bearer <token>)
+ * @param {import('express').Response} res - Express response
+ * @param {import('express').NextFunction} next - Express next function
+ * @returns {Promise<void>}
+ */
 async function requireAuth(req, res, next) {
   const header = req.headers["authorization"] || "";
   const token  = header.startsWith("Bearer ") ? header.slice(7) : null;

@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 
-// Formats ISO date strings for the "Detected on" column; returns "—" for nulls
+/**
+ * Formats an ISO date string for display in the "Detected on" table column.
+ * Usage: Used internally by MergeQueueTable to format the detected_on field.
+ * @param {string|null} dateStr - ISO date string or null/undefined
+ * @returns {string} Human-readable date (e.g. "Jun 18, 2025") or "—" for null/undefined values
+ */
 const formatDate = (dateStr) => {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -10,9 +15,18 @@ const formatDate = (dateStr) => {
   });
 };
 
-// Renders potential duplicate customer pairs with per-row and bulk merge actions.
-// Row identity is keyed on the customer_id + duplicate_customer_id pair because
-// rows lack a single unique id field.
+/**
+ * Renders a table of potential duplicate customer pairs with per-row and bulk merge actions.
+ * Usage: Use in the Identity Resolution page to display and action pending duplicate records.
+ * Row identity is keyed on the customer_id + duplicate_customer_id pair (no single unique id).
+ * @param {Object} props
+ * @param {Object[]} props.rows - Array of duplicate-pair records to display
+ * @param {string} props.search - Current search string value
+ * @param {function} props.setSearch - Callback to update the search string
+ * @param {function} [props.onMerge] - Callback invoked with a single row when the Merge button is clicked
+ * @param {function} [props.onBulkMerge] - Callback invoked with an array of selected rows for bulk merge
+ * @returns {JSX.Element}
+ */
 const MergeQueueTable = ({ rows, search, setSearch, onMerge, onBulkMerge }) => {
   const [selected, setSelected] = useState([]);
 

@@ -2,8 +2,11 @@ import apiFetch from "./apiFetch";
 
 const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/identity-resolution`;
 
-// GET /api/identity-resolution/dashboard — returns identity KPIs such as
-// total profiles, match rate, and unresolved conflicts
+/**
+ * Fetches identity resolution KPIs from the dashboard endpoint.
+ * Usage: Call on page load to populate the identity resolution overview cards.
+ * @returns {Promise<Object>} KPI object including totalProfiles, matchRate, and unresolvedConflicts
+ */
 export const getIdentityDashboard = async () => {
   const res = await apiFetch(`${BASE_URL}/dashboard`);
   if (!res.ok) throw new Error("Failed to load identity dashboard");
@@ -11,8 +14,15 @@ export const getIdentityDashboard = async () => {
   return json.data;
 };
 
-// GET /api/identity-resolution/matches — paginated list of cross-channel
-// identity matches; supports full-text search by customer identifiers
+/**
+ * Fetches a paginated list of cross-channel identity matches with optional full-text search.
+ * Usage: Call when loading the merge queue table or when search/page controls change.
+ * @param {Object} params - Query parameters
+ * @param {string} [params.search] - Full-text search string for customer identifiers
+ * @param {number} params.page - Page number (1-based)
+ * @param {number} params.limit - Number of records per page
+ * @returns {Promise<{matches: Object[], total: number}>} Paginated match records and total count
+ */
 export const getIdentityMatches = async ({ search, page, limit }) => {
   const params = new URLSearchParams({ search: search || "", page, limit });
   const res = await apiFetch(`${BASE_URL}/matches?${params}`);
@@ -21,8 +31,11 @@ export const getIdentityMatches = async ({ search, page, limit }) => {
   return json.data;
 };
 
-// GET /api/identity-resolution/rules — fetches all matching rules (e.g. email,
-// phone, cookie) used by the resolution engine
+/**
+ * Fetches all identity matching rules used by the resolution engine.
+ * Usage: Call on page load to populate the MatchRulesCard; re-call after toggling a rule.
+ * @returns {Promise<Object[]>} Array of rule objects with id, rule_name, confidence_score, and is_active
+ */
 export const getIdentityRules = async () => {
   const res = await apiFetch(`${BASE_URL}/rules`);
   if (!res.ok) throw new Error("Failed to load identity rules");
@@ -30,8 +43,12 @@ export const getIdentityRules = async () => {
   return json.data;
 };
 
-// PATCH /api/identity-resolution/rules/:id — toggles a rule's enabled state
-// without requiring a full update payload
+/**
+ * Toggles the enabled/disabled state of an identity matching rule.
+ * Usage: Call when the user clicks the toggle switch on a rule in MatchRulesCard.
+ * @param {string|number} id - The rule ID to toggle
+ * @returns {Promise<Object>} The updated rule object reflecting the new is_active state
+ */
 export const toggleIdentityRule = async (id) => {
   const res = await apiFetch(`${BASE_URL}/rules/${id}`, { method: "PATCH" });
   if (!res.ok) throw new Error("Failed to toggle identity rule");
@@ -39,8 +56,12 @@ export const toggleIdentityRule = async (id) => {
   return json.data;
 };
 
-// POST /api/identity-resolution/merge — submits a manual merge request to
-// combine two or more customer profiles into a single canonical record
+/**
+ * Submits a manual merge request to combine customer profiles into a single canonical record.
+ * Usage: Call when the user confirms a merge action in the MergeQueueTable.
+ * @param {Object} payload - Merge request body containing the profile IDs to merge
+ * @returns {Promise<Object>} The resulting merged profile record
+ */
 export const mergeProfiles = async (payload) => {
   const res = await apiFetch(`${BASE_URL}/merge`, {
     method: "POST",

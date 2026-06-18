@@ -18,7 +18,13 @@ const MAX_ROWS  = MAX_CSV_ROWS;
 // Matches cell values that would be interpreted as formulas if opened in a spreadsheet
 const FORMULA_PREFIX_RE = /^[=+\-@\t\r]/;
 
-// Prepend a single quote to neutralise CSV injection / formula injection attacks
+/**
+ * Prepends a single quote to neutralise CSV/formula injection attacks for cell values
+ * that start with spreadsheet formula characters (=, +, -, @, tab, carriage return).
+ * Usage: Applied to every accepted cell value during CSV parsing
+ * @param {*} value - Raw cell value from the CSV stream
+ * @returns {string|*} Sanitized string, or the original value if it is not a formula-like string
+ */
 function sanitizeCell(value) {
   if (typeof value === "string" && FORMULA_PREFIX_RE.test(value)) {
     return "'" + value;
@@ -26,8 +32,15 @@ function sanitizeCell(value) {
   return value;
 }
 
-// Streams and validates a CSV file; resolves with { rows, errors } so the caller
-// can persist valid rows and report per-row failures without aborting the whole batch.
+/**
+ * Streams and validates a customer CSV file, resolving with separate valid rows and error messages
+ * so the caller can persist valid rows and report per-row failures without aborting the batch.
+ * Usage: Called by bulkUploadService.processUpload
+ * @param {string} filePath - Absolute path to the CSV file to parse
+ * @returns {Promise<{ rows: Array<Object>, errors: Array<string> }>}
+ *   rows contains valid, sanitized records with a _rowNum field;
+ *   errors contains human-readable messages for skipped rows
+ */
 function parseCSV(filePath) {
   return new Promise((resolve, reject) => {
     const rows   = [];
@@ -71,8 +84,14 @@ function parseCSV(filePath) {
   });
 }
 
-// Checks required fields, email format, and allowed status values for a single row.
-// Returns an array of human-readable error strings (empty array means the row is valid).
+/**
+ * Checks required fields, email format, and allowed status values for a single CSV row.
+ * Returns an array of human-readable error strings; an empty array means the row is valid.
+ * Usage: Called by parseCSV for each parsed data row
+ * @param {Object} row - Sanitized cell values keyed by ACCEPTED_COLUMNS field names
+ * @param {number} rowNum - 1-based row number for error messages
+ * @returns {Array<string>} Validation error messages (empty if valid)
+ */
 function validateRow(row, rowNum) {
   const errs = [];
 
@@ -93,7 +112,11 @@ function validateRow(row, rowNum) {
   return errs;
 }
 
-// Generates a downloadable CSV template with a header row and one example record
+/**
+ * Generates a downloadable CSV template string with a header row and one example record.
+ * Usage: Called by bulkUploadController to return a template file for users to fill out
+ * @returns {string} CSV text with headers and a single example row
+ */
 function buildTemplateCsv() {
   const headers = ["first_name", "last_name", "email", "phone",
                    "customer_type", "primary_source", "status", "dealer_code"];

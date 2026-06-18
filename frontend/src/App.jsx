@@ -223,8 +223,7 @@ function AppShell() {
               <div className="topbar-user">
                 <span className="topbar-name">{user?.full_name || "User"}</span>
                 <span
-                  className="topbar-role"
-                  style={{ textTransform: "capitalize" }}
+                  className="topbar-role text-capitalize"
                 >
                   {user?.customer_type ? `${user.role} · ${user.customer_type}` : user?.role || "Admin"}
                 </span>

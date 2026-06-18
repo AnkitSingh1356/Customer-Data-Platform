@@ -4,7 +4,12 @@ const { generateCdpId } = require("../utils/cdpId");
 const fs              = require("fs");
 const { UPLOAD_CHUNK_SIZE, MAX_UPLOAD_ERRORS } = require("../config/constants");
 
-// Creates a new upload job record in 'pending' state and returns its ID
+/**
+ * Creates a new upload job record in 'pending' state and returns its ID.
+ * Usage: Called by bulkUploadController before processing begins
+ * @param {string} filename - Original filename for display in the UI
+ * @returns {Promise<number>} The new job's primary key
+ */
 async function createJob(filename) {
   const res = await pool.query(
     `INSERT INTO bulk_upload_jobs (filename, status)
@@ -14,7 +19,12 @@ async function createJob(filename) {
   return res.rows[0].id;
 }
 
-// Transitions job status to 'processing' so the UI can show progress
+/**
+ * Transitions a job's status to 'processing' so the UI can display progress.
+ * Usage: Called internally by processUpload at the start of the upload pipeline
+ * @param {number} jobId - The job's primary key
+ * @returns {Promise<void>}
+ */
 async function markProcessing(jobId) {
   await pool.query(
     `UPDATE bulk_upload_jobs SET status = 'processing' WHERE id = $1`,
@@ -22,7 +32,18 @@ async function markProcessing(jobId) {
   );
 }
 
-// Writes final counters and error log to the job record; called on both success and failure
+/**
+ * Writes final counters and the error log to the job record; called on both success and failure.
+ * Usage: Called internally by processUpload after all chunks are upserted (or on error)
+ * @param {number} jobId - The job's primary key
+ * @param {Object} result - Final job statistics
+ * @param {number} result.totalRows - Total rows parsed from the CSV
+ * @param {number} result.successCount - Number of rows upserted successfully
+ * @param {number} result.failedCount - Number of rows that failed
+ * @param {Array<string>} result.errorLog - Per-row error messages
+ * @param {string} result.status - Final status: "completed" or "failed"
+ * @returns {Promise<void>}
+ */
 async function finaliseJob(jobId, { totalRows, successCount, failedCount, errorLog, status }) {
   await pool.query(
     `UPDATE bulk_upload_jobs
@@ -37,7 +58,15 @@ async function finaliseJob(jobId, { totalRows, successCount, failedCount, errorL
   );
 }
 
-// Orchestrates the full upload pipeline: parse CSV → upsert chunks → finalise job
+/**
+ * Orchestrates the full upload pipeline: parse CSV, upsert chunks, then finalise the job.
+ * Removes the temp file on completion regardless of success or failure.
+ * Usage: Called by bulkUploadController after creating the job record
+ * @param {number} jobId - The job's primary key (used to update status and log errors)
+ * @param {string} filePath - Absolute path to the uploaded temp file
+ * @param {string} filename - Original filename (kept for reference only)
+ * @returns {Promise<void>}
+ */
 async function processUpload(jobId, filePath, filename) {
   await markProcessing(jobId);
 
@@ -89,7 +118,12 @@ async function processUpload(jobId, filePath, filename) {
 }
 
 
-// Maps Postgres constraint error codes to human-readable messages for the error log
+/**
+ * Maps Postgres constraint error codes to human-readable messages for the error log.
+ * Usage: Called by upsertChunk when a row-level DB insert fails
+ * @param {Error} e - The Postgres error object (expects e.code)
+ * @returns {string} A user-facing error description
+ */
 function friendlyDbError(e) {
   if (e.code === "23505") return "Duplicate record — row already exists.";
   if (e.code === "23502") return "Missing required field.";
@@ -97,8 +131,15 @@ function friendlyDbError(e) {
   return "Database error — row could not be inserted.";
 }
 
-// Upserts a batch of customer rows; per-row SAVEPOINTs let one failure skip
-// without aborting the rest of the chunk
+/**
+ * Upserts a batch of customer rows using per-row SAVEPOINTs so one failure
+ * skips only that row without aborting the rest of the chunk.
+ * Usage: Called internally by processUpload for each UPLOAD_CHUNK_SIZE slice of rows
+ * @param {number} jobId - Job ID used to persist per-row error details
+ * @param {Array<Object>} rows - Validated customer row objects from parseCSV
+ * @param {Array<string>} errorLog - Mutable error log array; failed rows are appended here
+ * @returns {Promise<void>}
+ */
 async function upsertChunk(jobId, rows, errorLog) {
   const client = await pool.connect();
   try {
@@ -158,7 +199,12 @@ async function upsertChunk(jobId, rows, errorLog) {
   }
 }
 
-// Retrieves job status and counters for polling or result display
+/**
+ * Retrieves job status and counters for polling or result display.
+ * Usage: Called by bulkUploadController.getJob to return upload progress to the client
+ * @param {number} jobId - The job's primary key
+ * @returns {Promise<Object|null>} Job record with status, counters, and error_log, or null if not found
+ */
 async function getJob(jobId) {
   const res = await pool.query(
     `SELECT id, filename, status, total_rows, success_count,

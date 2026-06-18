@@ -1,8 +1,14 @@
 const BASE       = `${import.meta.env.VITE_API_BASE_URL}/api/rbac`;
 const AUDIT_BASE = `${import.meta.env.VITE_API_BASE_URL}/api/audit`;
 
-// Internal helper — sends a raw fetch request with JSON headers and the caller-
-// supplied auth headers, then throws a descriptive error on non-ok responses
+/**
+ * Sends a JSON fetch request to the RBAC API base URL and throws on non-ok responses.
+ * Usage: Internal helper used by all rbacApi methods.
+ * @param {string} endpoint - Path appended to BASE (e.g. "/users")
+ * @param {RequestInit} [options={}] - Standard fetch options (method, body, etc.)
+ * @param {Object} [authHeaders={}] - Auth header object from authHeader() in AuthContext
+ * @returns {Promise<any>} Parsed JSON response body
+ */
 async function request(endpoint, options = {}, authHeaders = {}) {
   const res = await fetch(`${BASE}${endpoint}`, {
     headers: { "Content-Type": "application/json", ...authHeaders },
@@ -13,8 +19,12 @@ async function request(endpoint, options = {}, authHeaders = {}) {
   return data;
 }
 
-// Builds a query string from params, omitting undefined/null/empty values to
-// keep URLs clean when filters are not applied
+/**
+ * Builds a query string from a params object, omitting undefined/null/empty-string values.
+ * Usage: Internal helper to keep API URLs clean when optional filters are not applied.
+ * @param {Object} [params={}] - Key/value pairs to serialize
+ * @returns {string} URL-encoded query string (without leading "?")
+ */
 function qs(params = {}) {
   const clean = Object.fromEntries(
     Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "")
@@ -22,8 +32,11 @@ function qs(params = {}) {
   return new URLSearchParams(clean).toString();
 }
 
-// rbacApi — all methods accept an auth header object as the last argument (h)
-// so callers can pass authHeader() from AuthContext directly
+/**
+ * Namespace object containing all RBAC API methods for users, roles, modules, menus, and pages.
+ * Usage: Import and call methods directly, passing authHeader() from AuthContext as the last argument.
+ * All methods return the parsed JSON response from the RBAC API.
+ */
 export const rbacApi = {
   // GET /rbac/my-access — returns the current user's permissions, menus, and pages
   getMyAccess: (h) => request("/my-access", {}, h),
@@ -61,7 +74,14 @@ export const rbacApi = {
   getUserAccessSummary: (id, h) => request(`/users/${id}/summary`, {}, h),
 };
 
-// Separate helper for the audit endpoint — kept isolated from rbac base URL
+/**
+ * Sends a JSON fetch request to the audit API base URL and throws on non-ok responses.
+ * Usage: Internal helper used by auditApi methods; isolated from rbac base URL.
+ * @param {string} endpoint - Path appended to AUDIT_BASE
+ * @param {RequestInit} [options={}] - Standard fetch options
+ * @param {Object} [authHeaders={}] - Auth header object from authHeader()
+ * @returns {Promise<any>} Parsed JSON response body
+ */
 async function auditRequest(endpoint, options = {}, authHeaders = {}) {
   const res = await fetch(`${AUDIT_BASE}${endpoint}`, {
     headers: { "Content-Type": "application/json", ...authHeaders },
@@ -72,6 +92,10 @@ async function auditRequest(endpoint, options = {}, authHeaders = {}) {
   return data;
 }
 
+/**
+ * Namespace object containing audit log API methods.
+ * Usage: Import and call methods directly, passing authHeader() from AuthContext as the last argument.
+ */
 export const auditApi = {
   // GET /audit/?<params> — returns paginated system audit log entries
   getLogs: (params, h) => auditRequest(`/?${qs(params)}`, {}, h),

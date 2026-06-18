@@ -7,17 +7,32 @@ const USER_KEY  = "cdp_user";
 
 const AuthContext = createContext(null);
 
-// Writes JWT and user object to localStorage so session survives a reload
+/**
+ * Writes the JWT and user object to localStorage so the session survives a page reload.
+ * @param {string} token - The JWT access token
+ * @param {Object} user - The authenticated user object
+ * @returns {void}
+ */
 const persist = (token, user) => {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 };
-// Wipes both keys on logout to prevent stale credentials remaining in storage
+/**
+ * Removes the JWT token and user object from localStorage on logout.
+ * @returns {void}
+ */
 const clear = () => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
 };
 
+/**
+ * Provides authentication state (user, token, persona) and auth actions to the entire app.
+ * Usage: Wrap the root of the app with AuthProvider; consume values via the useAuth hook.
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - Child components that need auth context
+ * @returns {JSX.Element}
+ */
 export function AuthProvider({ children }) {
   // Hydrate user from localStorage on first render; fall back to null if JSON is corrupt
   const [user,    setUser]    = useState(() => {
@@ -32,11 +47,23 @@ export function AuthProvider({ children }) {
   // Persona drives RBAC persona-based access; defaults to "admin" if role is absent
   const persona = user?.role ?? "admin";
 
-  // Returns a Bearer auth header object; callers spread this into fetch options
+  /**
+   * Returns a Bearer Authorization header object for authenticated API calls.
+   * Usage: Spread the return value into fetch headers or pass directly to service methods.
+   * @returns {{ Authorization: string } | {}} Header object, or empty object if not authenticated
+   */
   const authHeader = useCallback(() =>
     token ? { Authorization: `Bearer ${token}` } : {},
   [token]);
 
+  /**
+   * Authenticates the user with email and password, persisting the session to localStorage.
+   * Usage: Call from the login form submit handler.
+   * @param {Object} credentials
+   * @param {string} credentials.email - User's email address
+   * @param {string} credentials.password - User's password
+   * @returns {Promise<Object>} The authenticated user object
+   */
   const login = useCallback(async ({ email, password }) => {
     setLoading(true); setError("");
     try {
@@ -70,6 +97,12 @@ const data = await res.json();
     finally { setLoading(false); }
   }, []);
 
+  /**
+   * Registers a new user and logs them in, persisting the session to localStorage.
+   * Usage: Call from the registration form submit handler.
+   * @param {Object} payload - Registration data (email, password, full_name, etc.)
+   * @returns {Promise<Object>} The newly created and authenticated user object
+   */
   const register = useCallback(async (payload) => {
     setLoading(true); setError("");
     try {
@@ -101,6 +134,11 @@ const data = await res.json();
     finally { setLoading(false); }
   }, []);
 
+  /**
+   * Clears the authentication session from state and localStorage.
+   * Usage: Call when the user clicks the logout button.
+   * @returns {void}
+   */
   const logout = useCallback(() => {
     clear();
     setToken(null);
@@ -108,8 +146,12 @@ const data = await res.json();
     setError("");
   }, []);
 
-  // Re-fetches the authenticated user's profile; logs out automatically if the
-  // token is expired or the request fails to prevent stale user state
+  /**
+   * Re-fetches the current user's profile from the server and updates local state.
+   * Usage: Called automatically on mount; call manually after profile changes.
+   * Logs out automatically if the token is expired or the request fails.
+   * @returns {Promise<void>}
+   */
   const refreshProfile = useCallback(async () => {
     if (!token) return;
     try {
@@ -121,6 +163,12 @@ const data = await res.json();
     } catch { logout(); }
   }, [token, authHeader, logout]);
 
+  /**
+   * Updates the current user's profile fields and syncs changes to local state and localStorage.
+   * Usage: Call from the profile settings form submit handler.
+   * @param {Object} payload - Partial user fields to update (e.g. full_name, phone, department)
+   * @returns {Promise<Object>} The updated user object
+   */
   const updateProfile = useCallback(async (payload) => {
 
     const res = await fetch(`${BASE}/profile`, {
@@ -155,6 +203,12 @@ const data = await res.json();
   }, [authHeader, user]);
 
 
+  /**
+   * Changes the current user's password via the authenticated API endpoint.
+   * Usage: Call from the change-password form submit handler.
+   * @param {Object} payload - Password change data (e.g. { current_password, new_password })
+   * @returns {Promise<Object>} The API response confirming the password change
+   */
   const changePassword = useCallback(async (payload) => {
     const res  = await fetch(`${BASE}/password`, {
       method: "PUT",

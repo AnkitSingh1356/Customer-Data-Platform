@@ -16,8 +16,21 @@ const ACTIONS = {
   PAGE_ACCESS_UPDATED:  "PAGE_ACCESS_UPDATED",
 };
 
-// Persists a permission-change event; errors are swallowed so audit never
-// blocks the operation that triggered it
+/**
+ * Persists a permission-change event to the audit log; errors are swallowed so
+ * audit failures never block the operation that triggered them.
+ * Usage: Called by rbacService after any user, role, or permission mutation
+ * @param {Object} opts - Audit event details
+ * @param {string} opts.action - One of the ACTIONS constants (e.g. "USER_CREATED")
+ * @param {Object} [opts.performedBy] - User who performed the action { id, full_name, email }
+ * @param {Object} [opts.targetUser] - User affected by the action { id, full_name, name }
+ * @param {Object} [opts.targetRole] - Role affected by the action { id, name }
+ * @param {string} [opts.entityType] - Entity type string for context
+ * @param {*} [opts.oldValue] - Previous state (serialised to JSONB)
+ * @param {*} [opts.newValue] - New state (serialised to JSONB)
+ * @param {*} [opts.metadata] - Additional context (serialised to JSONB)
+ * @returns {Promise<void>}
+ */
 async function log({
   action,
   performedBy,
@@ -56,7 +69,19 @@ async function log({
   }
 }
 
-// Returns a paginated, filterable list of permission audit log entries
+/**
+ * Returns a paginated, filterable list of permission audit log entries.
+ * Usage: Called by auditController.getLogs to power the audit log UI
+ * @param {Object} [opts={}] - Filter and pagination options
+ * @param {number} [opts.page=1] - Page number (1-based)
+ * @param {number} [opts.limit=20] - Records per page
+ * @param {string} [opts.action] - Filter by action type constant (e.g. "USER_CREATED")
+ * @param {string} [opts.search] - Partial match on performer name, target user/role name
+ * @param {string} [opts.from] - Start date filter (ISO timestamp string)
+ * @param {string} [opts.to] - End date filter (inclusive, ISO date string)
+ * @param {string} [opts.target_user_id] - Filter to a specific target user by ID
+ * @returns {Promise<{ logs: Array<Object>, total: number, page: number, limit: number }>}
+ */
 async function getLogs({
   page           = 1,
   limit          = 20,

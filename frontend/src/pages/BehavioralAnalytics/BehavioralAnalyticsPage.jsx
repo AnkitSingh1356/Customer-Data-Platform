@@ -29,10 +29,9 @@ import KpiCard from "../../components/common/KpiCard";
 import DataTable from "../../components/common/DataTable";
 import Pagination from "../../components/common/Pagination";
 import { useRBAC } from "../../auth/RBACContext";
+import { CHART_COLORS } from '../../config/constants';
 
 import "../../styles/behavioralAnalytics.css";
-
-const COLORS = ["#0EA5E9", "#14B8A6", "#22C55E", "#F97316"];
 
 function BehavioralAnalyticsPage() {
   const { hasPermission } = useRBAC();
@@ -590,7 +589,7 @@ function BehavioralAnalyticsPage() {
                     {trafficSources.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
                       />
                     ))}
                   </Pie>
@@ -606,7 +605,7 @@ function BehavioralAnalyticsPage() {
                       <span
                         className="traffic-dot"
                         style={{
-                          background: COLORS[index % COLORS.length],
+                          background: CHART_COLORS[index % CHART_COLORS.length],
                         }}
                       />
 

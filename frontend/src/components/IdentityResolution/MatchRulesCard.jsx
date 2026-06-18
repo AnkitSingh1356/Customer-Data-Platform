@@ -1,6 +1,12 @@
-// Displays identity-matching rules with their confidence scores.
-// Each rule can be toggled active/inactive via onToggle(rule.id).
-// When onToggle is omitted the toggles render as read-only indicators.
+/**
+ * Displays identity-matching rules with their confidence scores and active/inactive toggles.
+ * Usage: Render in the Identity Resolution page to show and manage matching rule configuration.
+ * When onToggle is omitted, the toggle indicators are read-only.
+ * @param {Object} props
+ * @param {Array<{id: string|number, rule_name: string, confidence_score: number, is_active: boolean}>} props.rules - Array of identity matching rule objects
+ * @param {function} [props.onToggle] - Optional callback invoked with rule.id when a toggle is clicked
+ * @returns {JSX.Element}
+ */
 const MatchRulesCard = ({
     rules,
     onToggle,

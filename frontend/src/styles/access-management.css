@@ -1165,6 +1165,29 @@
 .am-stat-margin { margin-left: 6px; }
 .am-history-margin-top { margin-top: 8px; }
 
+/* ── UserAccessSummary utility classes ─────────────────────────────── */
+.am-summary-overflow-x { overflow-x: auto; }
+.am-badge-ml { margin-left: 6px; }
+.am-text-sm { font-size: 0.82rem; }
+.am-text-xs { font-size: 0.76rem; }
+.am-text-sm-padded { font-size: 0.82rem; padding: 3px 10px; }
+.am-permission-empty { font-size: 0.82rem; padding: 16px 0; }
+.am-bold { font-weight: 600; }
+.am-empty-center { text-align: center; padding: 32px 0; }
+.am-muted-empty { padding: 60px 0; text-align: center; color: #9ca3af; }
+.am-img-cover { object-fit: cover; }
+.am-mt-2 { margin-top: 2px; }
+.am-mt-6 { margin-top: 6px; }
+.am-mt-8 { margin-top: 8px; }
+.am-mb-12 { margin-bottom: 12px; }
+.am-warning { color: #d97706; }
+.am-change-sm { font-size: 11px; line-height: 1.5; }
+.am-change-removed { color: #dc2626; text-decoration: line-through; margin-right: 4px; }
+.am-change-added { color: #16a34a; }
+.am-icon-action-row { display: flex; gap: 6px; }
+.am-icon-btn-xs { width: 24px; height: 24px; font-size: 10px; }
+.am-nowrap-sm { white-space: nowrap; font-size: 12px; }
+
 /* Table column widths (ModuleManagement, RoleManagement, MenuManagement) */
 .am-col-70  { width: 70px; }
 .am-col-80  { width: 80px; }

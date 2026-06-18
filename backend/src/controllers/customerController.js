@@ -1,6 +1,12 @@
 const { getCustomers, getStats } = require("../services/customerService");
 
-// Returns paginated customer list; viewerRole/viewerCustomerType enforce row-level visibility
+/**
+ * Returns a paginated customer list scoped to the caller's row-level visibility.
+ * Usage: Called by Express router on GET /api/customers
+ * @param {import('express').Request} req - req.query: { type, status, source, search, page, limit }; req.user: { role, customer_type } for scoping
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: paginated result object on success; { error } on failure
+ */
 async function listCustomers(req, res) {
   const { type, status, source, search, page, limit } = req.query;
   try {
@@ -22,7 +28,13 @@ async function listCustomers(req, res) {
   }
 }
 
-// Returns customer count summaries scoped to the caller's accessible records
+/**
+ * Returns customer count summaries scoped to the caller's accessible records.
+ * Usage: Called by Express router on GET /api/customers/stats
+ * @param {import('express').Request} req - req.user: { role, customer_type } for scoping
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: stats object on success; { error } on failure
+ */
 async function getCustomerStats(req, res) {
   try {
     const stats = await getStats({

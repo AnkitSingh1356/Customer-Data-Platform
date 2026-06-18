@@ -1,18 +1,6 @@
 import { useState, useEffect } from "react";
 import RuleBuilder, { emptyRule } from "./RuleBuilder";
-
-// Lookback windows available for scoping behavioural rule evaluation
-const ACTIVITY_WINDOWS = [
-  "All time",
-  "Last 7d",
-  "Last 14d",
-  "Last 30d",
-  "Last 60d",
-  "Last 90d",
-  "Last 6m",
-  "Last 12m",
-  "YTD",
-];
+import { ACTIVITY_WINDOWS } from '../../config/constants';
 // Baseline form state shared by both create and edit modes
 const defaultForm = () => ({
   name:            "",

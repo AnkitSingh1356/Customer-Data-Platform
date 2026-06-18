@@ -104,6 +104,9 @@ export const ATTR_TYPES = ["Behavioral", "Demographic", "Transactional", "Custom
 // Shared chart color palette (BehavioralAnalyticsPage, ConsentCompliancePage)
 export const CHART_COLORS = ["#0EA5E9", "#14B8A6", "#22C55E", "#F97316"];
 
+// Consent status pie chart colors: Granted, Revoked, Pending (ConsentCompliancePage)
+export const CONSENT_CHART_COLORS = ["#0ea5e9", "#2F855A", "#5B5B5B"];
+
 // ─── Release Notes ────────────────────────────────────────────────────────────
 // Icon config for release note sections.
 // This constants file is .js and must remain JSX-free, so we only store

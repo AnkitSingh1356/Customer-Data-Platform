@@ -10,40 +10,56 @@ cdpAxios.interceptors.request.use((config) => {
   return config;
 });
 
-// GET /api/promotional-effectiveness/overview — returns top-level campaign KPIs
-// (total spend, revenue, ROAS, conversion rate) as summary cards
+/**
+ * Fetches top-level campaign KPI summary cards from the promotional effectiveness API.
+ * Usage: Call on page load to populate the overview KPI row (spend, revenue, ROAS, conversion rate).
+ * @returns {Promise<Object>} KPI summary with totalSpend, revenue, roas, and conversionRate fields
+ */
 export const fetchOverview =
   async () => {
     const response = await cdpAxios.get(`${API}/overview`);
     return response.data.data;
   };
 
-// GET /api/promotional-effectiveness/campaigns — paginated/filtered campaign
-// list; accepts params such as page, limit, status, and date range
+/**
+ * Fetches a paginated and filtered campaign list.
+ * Usage: Call when loading the campaigns table or when filter/page controls change.
+ * @param {Object} params - Query parameters such as page, limit, status, and date range
+ * @returns {Promise<{campaigns: Object[], total: number}>} Paginated campaign records and total count
+ */
 export const fetchCampaigns =
   async (params) => {
     const response = await cdpAxios.get(`${API}/campaigns`, { params });
     return response.data.data;
   };
 
-// GET /api/promotional-effectiveness/budget-performance — returns planned vs
-// actual spend per campaign for the budget utilisation chart
+/**
+ * Fetches planned vs. actual spend per campaign for the budget utilisation chart.
+ * Usage: Call on page load or on refresh to render the budget performance bar chart.
+ * @returns {Promise<Object[]>} Array of campaign budget objects with planned and actual spend values
+ */
 export const fetchBudgetPerformance =
   async () => {
     const response = await cdpAxios.get(`${API}/budget-performance`);
     return response.data.data;
   };
 
-// GET /api/promotional-effectiveness/status-distribution — returns campaign
-// counts grouped by status (active, paused, completed, draft) for the pie chart
+/**
+ * Fetches campaign counts grouped by status for the status distribution pie chart.
+ * Usage: Call on page load to populate the status distribution chart (active, paused, completed, draft).
+ * @returns {Promise<Object[]>} Array of status-count objects, e.g. [{ status: "active", count: 12 }]
+ */
 export const fetchStatusDistribution =
   async () => {
     const response = await cdpAxios.get(`${API}/status-distribution`);
     return response.data.data;
   };
 
-// GET /api/promotional-effectiveness/export — returns the full campaigns
-// dataset as JSON for client-side CSV download
+/**
+ * Fetches the full campaigns dataset as JSON for client-side CSV download.
+ * Usage: Call when the user clicks the Export button; pass the result to exportCsvFile.
+ * @returns {Promise<Object[]>} Flat array of all campaign records ready for CSV serialization
+ */
 export const exportCampaigns =
   async () => {
     const response = await cdpAxios.get(`${API}/export`);

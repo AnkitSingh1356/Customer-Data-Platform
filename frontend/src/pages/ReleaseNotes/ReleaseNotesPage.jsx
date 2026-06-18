@@ -37,18 +37,22 @@ function getSectionConfig(sectionType) {
 }
 
 
+/** Displays a version string as a styled badge (e.g. "v1.4.2"). @returns {JSX.Element} */
 const VersionBadge = memo(({ version }) => (
   <span className="rn-version-badge">v{version}</span>
 ));
 
+/** Displays a "LATEST" label badge for the most recent release entry. @returns {JSX.Element} */
 const LatestBadge = memo(() => (
   <span className="rn-latest-badge">LATEST</span>
 ));
 
+/** Renders a single tag filter chip for a release note. @returns {JSX.Element} */
 const TagChip = memo(({ tag }) => (
   <span className="rn-tag-chip">{tag}</span>
 ));
 
+/** Renders the highlighted items panel for a release note's Highlights section. @returns {JSX.Element|null} */
 const HighlightsPanel = memo(({ items }) => {
   if (!items?.length) return null;
   return (
@@ -68,6 +72,7 @@ const HighlightsPanel = memo(({ items }) => {
   );
 });
 
+/** Renders a single release note section card (e.g. Features, Fixes) with its icon and item list. @returns {JSX.Element} */
 const SectionCard = memo(({ section }) => {
   const { sectionType, sectionName, items = [] } = section;
   const { Icon, color, bg } = getSectionConfig(sectionType);
@@ -92,6 +97,7 @@ const SectionCard = memo(({ section }) => {
   );
 });
 
+/** Renders a full release note article card with version badge, tags, highlights, and section cards. @returns {JSX.Element} */
 const ReleaseCard = memo(({ note }) => {
   const { title, version, releaseDateFormatted, isLatest, tags = [], sections = [] } = note;
 
@@ -132,6 +138,7 @@ const ReleaseCard = memo(({ note }) => {
   );
 });
 
+/** Renders the search input bar with a clear button for the release notes page. @returns {JSX.Element} */
 const SearchBar = memo(({ value, onChange }) => (
   <div className="rn-search-bar">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -153,6 +160,7 @@ const SearchBar = memo(({ value, onChange }) => (
   </div>
 ));
 
+/** Renders a loading skeleton placeholder while release notes are being fetched. @returns {JSX.Element} */
 const Skeleton = () => (
   <div className="rn-skeleton-wrap" aria-busy="true" aria-label="Loading release notes">
     {[1, 2, 3].map((n) => (
@@ -168,6 +176,7 @@ const Skeleton = () => (
   </div>
 );
 
+/** Renders an empty state message when no release notes match the current search or tag filter. @returns {JSX.Element} */
 const EmptyState = ({ search, tag }) => (
   <div className="rn-empty">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -182,6 +191,7 @@ const EmptyState = ({ search, tag }) => (
   </div>
 );
 
+/** Renders an error state with a retry button when the release notes API call fails. @returns {JSX.Element} */
 const ErrorState = ({ message, onRetry }) => (
   <div className="rn-error">
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

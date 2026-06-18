@@ -1,7 +1,11 @@
 const { Pool } = require("pg");
 require("dotenv").config();
 
-// Shared connection pool — max 10 clients keeps resource usage predictable under load
+/**
+ * Shared PostgreSQL connection pool configured from environment variables.
+ * Max 10 clients; idle connections are released after 30 s; connections time out after 5 s.
+ * Usage: Imported by all service and middleware files that execute database queries
+ */
 const pool = new Pool({
   host:     process.env.DB_HOST     || "localhost",
   port:     parseInt(process.env.DB_PORT || "5432"),

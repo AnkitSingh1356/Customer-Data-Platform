@@ -4,9 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
 import { useToast } from "../../hooks/useToast";
-
-// Column headers for the permission matrix; must match backend action enum values.
-const STANDARD_ACTIONS = ["create", "read", "update", "delete", "export", "import"];
+import { STANDARD_ACTIONS } from '../../config/constants';
 
 export default function PermissionManagement() {
   const { authHeader } = useAuth();

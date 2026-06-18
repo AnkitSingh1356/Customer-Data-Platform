@@ -32,6 +32,12 @@ const fileFilter = (_req, file, cb) => {
   }
 };
 
+/**
+ * Multer upload middleware configured for CSV-only file uploads.
+ * Files are stored on disk under the uploads/ directory with a timestamp-prefixed,
+ * sanitized filename. Rejects non-CSV files and enforces a MAX_UPLOAD_MB size limit.
+ * Usage: Applied as route middleware (e.g. router.post('/upload', upload.single('file'), ...))
+ */
 const upload = multer({
   storage,
   fileFilter,

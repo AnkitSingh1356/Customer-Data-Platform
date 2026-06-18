@@ -2,7 +2,13 @@ const service = require(
   "../services/identityResolutionService",
 );
 
-// Returns identity resolution KPIs: match rate, merge count, unresolved duplicates
+/**
+ * Returns identity resolution KPIs: match rate, merge count, unresolved duplicates.
+ * Usage: Called by Express router on GET /api/identity/dashboard
+ * @param {import('express').Request} req - No parameters used
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const getDashboard =
   async (req, res) => {
     try {
@@ -27,7 +33,13 @@ const getDashboard =
     }
   };
 
-// Returns paginated candidate duplicate pairs identified by the matching engine
+/**
+ * Returns paginated candidate duplicate pairs identified by the matching engine.
+ * Usage: Called by Express router on GET /api/identity/matches
+ * @param {import('express').Request} req - req.query: { search, page, limit }
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const getMatches =
   async (req, res) => {
     try {
@@ -62,7 +74,13 @@ const getMatches =
     }
   };
 
-// Retrieves all identity matching rules (e.g., email exact-match, phone fuzzy-match)
+/**
+ * Retrieves all identity matching rules (e.g., email exact-match, phone fuzzy-match).
+ * Usage: Called by Express router on GET /api/identity/rules
+ * @param {import('express').Request} req - No parameters used
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const getRules =
   async (req, res) => {
     try {
@@ -87,7 +105,13 @@ const getRules =
     }
   };
 
-// Enables or disables a single matching rule without deleting its configuration
+/**
+ * Enables or disables a single identity matching rule without deleting its configuration.
+ * Usage: Called by Express router on PATCH /api/identity/rules/:id/toggle
+ * @param {import('express').Request} req - req.params.id: rule ID
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const toggleRule =
   async (req, res) => {
     try {
@@ -114,7 +138,13 @@ const toggleRule =
     }
   };
 
-// Merges two or more duplicate customer profiles into a single canonical record
+/**
+ * Merges two or more duplicate customer profiles into a single canonical record.
+ * Usage: Called by Express router on POST /api/identity/merge
+ * @param {import('express').Request} req - req.body: merge payload (profile IDs and merge strategy)
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON: { success: true, data } on success; { success: false, message } on failure
+ */
 const mergeProfiles =
   async (req, res) => {
     try {

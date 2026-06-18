@@ -25,8 +25,7 @@ import {
 import { exportCsvFile } from "../../utils/exportCsv";
 
 import "../../styles/consentCompliance.css";
-
-const COLORS = ["#0ea5e9", "#2F855A", "#5B5B5B"];
+import { CONSENT_CHART_COLORS } from '../../config/constants';
 
 const ConsentCompliancePage = () => {
   // Pre-compute permission flags to conditionally show/hide action buttons
@@ -456,7 +455,7 @@ return (
                   dataKey="value"
                 >
                   {chartData.map((entry, index) => (
-                    <Cell key={index} fill={COLORS[index]} />
+                    <Cell key={index} fill={CONSENT_CHART_COLORS[index]} />
                   ))}
                 </Pie>
 
@@ -474,7 +473,7 @@ return (
               <span
                 className="cc-dot"
                 style={{
-                  background: COLORS[index],
+                  background: CONSENT_CHART_COLORS[index],
                 }}
               />
 

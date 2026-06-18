@@ -1,6 +1,12 @@
-// Generates a CSV from an array of plain objects and triggers a browser
-// download. Column order matches the key order of the first row.
-// `data` — array of flat objects; `filename` — suggested download name.
+/**
+ * Generates a CSV file from an array of plain objects and triggers a browser download.
+ * Usage: Call with a flat data array and a filename whenever the user exports a dataset.
+ * Column order is derived from the key order of the first row object.
+ * @param {Object} options
+ * @param {Object[]} [options.data=[]] - Array of flat objects to serialize; each key becomes a column header
+ * @param {string} [options.filename="export.csv"] - Suggested filename for the browser download dialog
+ * @returns {void}
+ */
 export function exportCsvFile({
     data = [],
     filename = "export.csv",

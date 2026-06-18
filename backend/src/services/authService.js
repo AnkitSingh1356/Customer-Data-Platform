@@ -7,24 +7,50 @@ const JWT_SECRET  = process.env.JWT_SECRET;
 // Fail fast at startup — a missing secret would silently break all auth
 if (!JWT_SECRET) throw new Error("FATAL: JWT_SECRET environment variable is not set.");
 
-// Signs a JWT with HS256; embeds role and customer_type for authorisation checks
+/**
+ * Signs a JWT with HS256, embedding role and customer_type for authorisation checks.
+ * Usage: Called internally by register and login to produce session tokens
+ * @param {Object} payload - Claims to embed (id, email, role, customer_type)
+ * @returns {string} Signed JWT string
+ */
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES, algorithm: "HS256" });
 }
 
-// Throws if the token is expired, tampered, or signed with the wrong secret
+/**
+ * Verifies a JWT, throwing if the token is expired, tampered, or signed with the wrong secret.
+ * Usage: Called by requireAuth middleware on every protected request
+ * @param {string} token - The raw JWT string to verify
+ * @returns {Object} Decoded token payload (id, email, role, customer_type)
+ */
 function verifyToken(token) {
   return jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
 }
 
-// Strips password_hash before returning user data to callers
+/**
+ * Strips password_hash from a user row before returning it to callers.
+ * Usage: Applied to any DB user row before it is sent to a controller or embedded in a token response
+ * @param {Object|null} row - Raw user row from the database
+ * @returns {Object|null} User object without the password_hash field, or null if row is falsy
+ */
 function sanitize(row) {
   if (!row) return null;
   const { password_hash, ...safe } = row;
   return safe;
 }
 
-// Creates a new user account and returns a signed JWT alongside the sanitized user record
+/**
+ * Creates a new user account and returns a signed JWT alongside the sanitized user record.
+ * Usage: Called by authController.register
+ * @param {Object} opts - Registration details
+ * @param {string} opts.full_name - User's display name
+ * @param {string} opts.email - User's unique email address
+ * @param {string} opts.password - Plaintext password (hashed before storage)
+ * @param {string} [opts.customer_type] - Customer type (defaults to "Employee")
+ * @param {string} [opts.department] - Optional department
+ * @param {string} [opts.phone] - Optional phone number
+ * @returns {Promise<{ token: string, user: Object }>} Signed JWT and sanitized user record
+ */
 async function register({ full_name, email, password, customer_type, department, phone }) {
   if (!full_name?.trim() || !email?.trim() || !password) {
     throw Object.assign(new Error("full_name, email and password are required."), { status: 400 });
@@ -62,7 +88,14 @@ async function register({ full_name, email, password, customer_type, department,
   return { token, user };
 }
 
-// Authenticates credentials and returns a fresh JWT; updates last_login on success
+/**
+ * Authenticates credentials and returns a fresh JWT; updates last_login on success.
+ * Usage: Called by authController.login
+ * @param {Object} opts - Login credentials
+ * @param {string} opts.email - User's email address
+ * @param {string} opts.password - Plaintext password to verify against stored hash
+ * @returns {Promise<{ token: string, user: Object }>} Signed JWT and sanitized user record
+ */
 async function login({ email, password }) {
   if (!email?.trim() || !password) {
     throw Object.assign(new Error("Email and password are required."), { status: 400 });
@@ -93,7 +126,12 @@ async function login({ email, password }) {
   return { token, user };
 }
 
-// Fetches the public profile fields for a given user; omits sensitive columns
+/**
+ * Fetches the public profile fields for a given user, omitting sensitive columns.
+ * Usage: Called by authController.getProfile
+ * @param {number} userId - The user's primary key
+ * @returns {Promise<Object|null>} User profile object or null if not found
+ */
 async function getProfile(userId) {
   const res = await pool.query(
     `SELECT
@@ -118,7 +156,19 @@ async function getProfile(userId) {
   return res.rows[0] ?? null;
 }
 
-// Updates mutable profile fields; returns the full updated profile without password_hash
+/**
+ * Updates mutable profile fields and returns the full updated profile without password_hash.
+ * Usage: Called by authController.updateProfile
+ * @param {number} userId - The user's primary key
+ * @param {Object} opts - Fields to update
+ * @param {string} opts.full_name - Required display name
+ * @param {string} [opts.department] - Optional department
+ * @param {string} [opts.phone] - Optional phone number
+ * @param {string} [opts.bio] - Optional biography text
+ * @param {string} [opts.address] - Optional address
+ * @param {string} [opts.avatar_url] - Optional HTTP/HTTPS avatar URL
+ * @returns {Promise<Object>} Sanitized updated user profile
+ */
 async function updateProfile(
   userId,
   {
@@ -177,7 +227,15 @@ async function updateProfile(
 
   return sanitize(res.rows[0]);
 }
-// Verifies the current password before replacing it; prevents unauthorised resets
+/**
+ * Verifies the current password before replacing it, preventing unauthorised resets.
+ * Usage: Called by authController.changePassword
+ * @param {number} userId - The user's primary key
+ * @param {Object} opts - Password change payload
+ * @param {string} opts.current_password - Plaintext current password for verification
+ * @param {string} opts.new_password - New plaintext password to hash and store
+ * @returns {Promise<{ message: string }>} Success confirmation message
+ */
 async function changePassword(userId, { current_password, new_password }) {
   if (!current_password || !new_password) {
     throw Object.assign(new Error("Both current and new password are required."), { status: 400 });

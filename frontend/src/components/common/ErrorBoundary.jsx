@@ -1,6 +1,13 @@
 import { Component } from "react";
 
-// Class component required because React error boundaries must use lifecycle methods.
+/**
+ * React error boundary that catches uncaught render errors in its child subtree and displays a fallback UI.
+ * Usage: Wrap any subtree that might throw during render; the "Try Again" button resets the error state.
+ * Must be a class component because React error boundaries require getDerivedStateFromError.
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - The component subtree to protect
+ * @returns {JSX.Element}
+ */
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -33,10 +40,7 @@ export default class ErrorBoundary extends Component {
           </p>
           <button
             onClick={this.reset}
-            style={{
-              padding: "8px 20px", background: "#1a56db", color: "#fff",
-              border: "none", borderRadius: 6, cursor: "pointer", fontSize: "0.84rem",
-            }}
+            className="error-boundary-btn"
           >
             Try Again
           </button>

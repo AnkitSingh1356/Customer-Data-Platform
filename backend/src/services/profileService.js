@@ -1,8 +1,15 @@
 const pool = require("../config/db");
 
 
-// Assembles a full customer profile from four separate tables and returns a
-// single merged object. Returns null when the CDP ID does not exist.
+/**
+ * Assembles a full customer profile from four separate tables (customers, dealer_affiliations,
+ * data_quality_issues, flexible_attributes) and returns a single merged object.
+ * Returns null when the CDP ID does not exist.
+ * Usage: Called by profileController.getCustomerProfile
+ * @param {string} cdpId - The customer's CDP identifier (e.g. "CDP-A3F7B2C")
+ * @returns {Promise<Object|null>} Merged profile object with dealer_affiliations, data_quality_issues,
+ *   and flexible_attributes arrays, or null if not found
+ */
 async function getCustomerProfile(cdpId) {
   const custRes = await pool.query(
     `SELECT
@@ -60,8 +67,17 @@ async function getCustomerProfile(cdpId) {
 }
 
 
-// Attaches an arbitrary key-value attribute to a customer profile, defaulting
-// to the "Behavioral" type when none is supplied.
+/**
+ * Attaches an arbitrary key-value attribute to a customer profile, defaulting to the
+ * "Behavioral" type when none is supplied.
+ * Usage: Called by profileController.addFlexibleAttribute
+ * @param {string} cdpId - The customer's CDP identifier
+ * @param {Object} opts - Attribute data
+ * @param {string} [opts.attr_type="Behavioral"] - Attribute category
+ * @param {string} opts.attr_key - Attribute key name
+ * @param {string} opts.attr_value - Attribute value
+ * @returns {Promise<Object>} The newly created flexible_attributes row
+ */
 async function addFlexibleAttribute(cdpId, { attr_type, attr_key, attr_value }) {
   const custRes = await pool.query(
     "SELECT id FROM customers WHERE cdp_id = $1", [cdpId]
@@ -77,8 +93,12 @@ async function addFlexibleAttribute(cdpId, { attr_type, attr_key, attr_value }) 
   return res.rows[0];
 }
 
-// Returns the mean lifetime value across all customers with a positive LTV,
-// excluding zero-value records to avoid deflating the benchmark figure.
+/**
+ * Returns the mean lifetime value across all customers with a positive LTV,
+ * excluding zero-value records to avoid deflating the benchmark figure.
+ * Usage: Called by profileController or dashboard aggregation routes
+ * @returns {Promise<number>} Average lifetime value rounded to 2 decimal places
+ */
 async function getAvgLifetimeValue() {
   const res = await pool.query(
     `SELECT COALESCE(ROUND(AVG(lifetime_value)::numeric, 2), 0) AS avg_ltv

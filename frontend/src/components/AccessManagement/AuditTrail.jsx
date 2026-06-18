@@ -1,4 +1,3 @@
-// Read-only audit log viewer for all RBAC permission change events.
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { auditApi } from "../../services/rbacService";
@@ -18,8 +17,16 @@ function ActionBadge({ action }) {
   );
 }
 
-// Renders a human-readable diff between old and new audit log values.
-// Each action type has a custom layout; the generic fallback diffs all keys.
+/**
+ * Renders a human-readable diff between old and new audit log values.
+ * Usage: Used internally by AuditTrail for the Changes column of each log row.
+ * Each action type has a custom layout; falls back to a generic key-diff for unknown types.
+ * @param {Object} props
+ * @param {Object|null} props.oldValue - Previous value snapshot from the audit record
+ * @param {Object|null} props.newValue - New value snapshot from the audit record
+ * @param {string} props.action - Audit action type (e.g. "USER_ROLES_UPDATED", "PERMISSIONS_UPDATED")
+ * @returns {JSX.Element}
+ */
 function ChangeSummary({ oldValue, newValue, action }) {
   if (!oldValue && !newValue) return <span className="am-text-muted">—</span>;
 
@@ -75,7 +82,12 @@ function ChangeSummary({ oldValue, newValue, action }) {
   );
 }
 
-// Client-side CSV export — downloads currently visible page of logs only.
+/**
+ * Exports the currently visible page of audit logs to a CSV file and triggers a browser download.
+ * Usage: Called internally when the Export CSV button is clicked.
+ * @param {Object[]} logs - Array of audit log entries from the current page
+ * @returns {void}
+ */
 function exportToCsv(logs) {
   const headers = ["Timestamp", "Action", "Performed By", "Target User", "Target Role", "Entity Type"];
   const rows = logs.map((l) => [
@@ -94,6 +106,12 @@ function exportToCsv(logs) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Read-only audit log viewer for all RBAC permission change events.
+ * Usage: Render in the Access Management page to surface the full system audit trail.
+ * Supports search, action filter, date range filters, pagination, and CSV export.
+ * @returns {JSX.Element}
+ */
 export default function AuditTrail() {
   const { authHeader } = useAuth();
 

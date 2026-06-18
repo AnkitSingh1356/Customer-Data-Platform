@@ -1,11 +1,8 @@
-// User management panel: create/edit users, assign RBAC roles, toggle
-// active status, and open the full UserAccessSummary modal.
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
 import UserAccessSummary from "./UserAccessSummary";
-
-const CUSTOMER_TYPES = ["Dealer", "B2B Customer", "B2C Customer", "Employee"];
+import { CUSTOMER_TYPES } from '../../config/constants';
 
 const EMPTY_FORM = {
   full_name: "", email: "", password: "",
@@ -24,6 +21,13 @@ function toFormInitial(user) {
   };
 }
 
+/**
+ * Renders an active/inactive status badge for a user row.
+ * Usage: Used internally by UserManagement in the Status column.
+ * @param {Object} props
+ * @param {boolean} props.active - True renders an "Active" badge; false renders "Inactive"
+ * @returns {JSX.Element}
+ */
 function Badge({ active }) {
   return (
     <span className={`am-badge ${active ? "am-badge--active" : "am-badge--inactive"}`}>
@@ -32,6 +36,14 @@ function Badge({ active }) {
   );
 }
 
+/**
+ * Renders a user avatar: shows the avatar image if available, otherwise a letter-initial circle.
+ * Usage: Used internally by UserManagement in the Name column.
+ * @param {Object} props
+ * @param {Object} props.user - User object with full_name and optional avatar_url
+ * @param {number} [props.size=30] - Avatar diameter in pixels
+ * @returns {JSX.Element}
+ */
 function UserAvatar({ user, size = 30 }) {
   if (user.avatar_url) {
     return (
@@ -49,6 +61,13 @@ function UserAvatar({ user, size = 30 }) {
   );
 }
 
+/**
+ * Renders a color-coded pill badge for a customer type.
+ * Usage: Used internally by UserManagement in the Customer Type column for non-admin users.
+ * @param {Object} props
+ * @param {string} props.type - Customer type string (e.g. "Dealer", "B2B Customer", "B2C Customer", "Employee")
+ * @returns {JSX.Element}
+ */
 function CustomerTypePill({ type }) {
   const cls = {
     "Dealer":       "am-pill--dealer",
@@ -211,6 +230,11 @@ function AssignRolesModal({ user, allRoles, onSave, onClose, loading }) {
   );
 }
 
+/**
+ * Full user management panel for creating, editing, assigning roles, toggling status, and viewing user access summaries.
+ * Usage: Render as a tab or section within the Access Management page.
+ * @returns {JSX.Element}
+ */
 export default function UserManagement() {
   const { authHeader } = useAuth();
 

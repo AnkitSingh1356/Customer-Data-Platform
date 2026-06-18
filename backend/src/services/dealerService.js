@@ -1,8 +1,12 @@
 const pool = require("../config/db");
 const csv = require("csv-parser");
 const fs = require("fs");
-// Returns network-wide aggregate stats: dealer counts by type plus
-// total contacts and combined annual revenue across all dealers.
+/**
+ * Returns network-wide aggregate stats: dealer counts by type, total contacts,
+ * and combined annual revenue across all dealers.
+ * Usage: Called by dealerController.getStats
+ * @returns {Promise<{ total_dealers, headquarters, branch_locations, contact_links, network_revenue }>}
+ */
 async function getStats() {
   const res = await pool.query(`
     SELECT
@@ -16,9 +20,14 @@ async function getStats() {
   return res.rows[0];
 }
 
-// Builds a two-level dealer tree: HQ nodes with their branch children nested.
-// When search is provided, only HQs matching the term are returned (along with
-// all their branches), so the caller always gets complete subtrees.
+/**
+ * Builds a two-level dealer tree: HQ nodes with their branch children nested.
+ * When search is provided, only matching HQs are returned but all their branches are included,
+ * so the caller always receives complete subtrees.
+ * Usage: Called by dealerController.getHierarchy
+ * @param {string} [search=""] - Optional partial match on dealer name, code, city, or region
+ * @returns {Promise<Array<Object>>} HQ dealer rows each with a `children` array of branch rows
+ */
 async function getHierarchy(search = "") {
   // NOTE: alias `d` is used in whereHQ, so the main HQ query must alias the table as `d`.
   let whereHQ = "WHERE d.parent_code IS NULL";
@@ -65,7 +74,14 @@ async function getHierarchy(search = "") {
   }));
 }
 
-/* ── Single dealer detail ───────────────────────────────────── */
+/**
+ * Returns full detail for a single dealer including related dealers, assigned reps,
+ * and pending access requests. Returns null when the code does not exist.
+ * Usage: Called by dealerController.getDealerDetail
+ * @param {string} code - The dealer's unique code identifier
+ * @returns {Promise<Object|null>} Dealer record augmented with related_dealers, assigned_reps,
+ *   connected_accounts, and access_requests arrays
+ */
 async function getDealerDetail(code) {
   const dealerRes = await pool.query(
     `SELECT id,name,code,parent_code,type,tier,region,city,country,
@@ -120,7 +136,13 @@ async function getDealerDetail(code) {
   };
 }
 
-/* ── Submit access request ──────────────────────────────────── */
+/**
+ * Submits a dealer data access request linking a dealer code to a target user UUID.
+ * Usage: Called by dealerController.requestAccess
+ * @param {string} code - Dealer code the request is filed against
+ * @param {string} targetUuid - UUID of the user requesting access
+ * @returns {Promise<Object>} The newly created dealer_access_requests row
+ */
 async function createAccessRequest(code, targetUuid) {
   if (!targetUuid?.trim())
     throw Object.assign(new Error("Target user UUID is required."), {
@@ -134,18 +156,28 @@ async function createAccessRequest(code, targetUuid) {
   return res.rows[0];
 }
 
-// Guard against CSV injection: prefix cells that would be interpreted as
-// spreadsheet formulas with a leading single-quote to neutralise them.
 const DEALER_FORMULA_RE = /^[=+\-@\t\r]/;
+/**
+ * Guards against CSV injection by prefixing cells that start with formula characters
+ * with a leading single-quote to neutralise them when opened in a spreadsheet.
+ * Usage: Called within bulkUpload for each cell of every parsed row
+ * @param {*} v - Raw cell value
+ * @returns {string|*} Sanitized string value, or the original value if not a formula-like string
+ */
 function sanitizeDealerCell(v) {
   return typeof v === "string" && DEALER_FORMULA_RE.test(v) ? "'" + v : v;
 }
 
 const MAX_DEALER_ROWS = parseInt(process.env.MAX_ROWS_PER_UPLOAD || "10000");
 
-// Parses a CSV file, validates required fields, and upserts each row by dealer
-// code. Existing records are updated with non-null incoming values only (COALESCE
-// preserves current data when a CSV field is blank). Returns insert/fail counts.
+/**
+ * Parses a dealer CSV file, validates required fields, and upserts each row by dealer code.
+ * Existing records are updated with non-null incoming values only (COALESCE preserves current
+ * data when a CSV field is blank). Removes the temp file on completion.
+ * Usage: Called by dealerController.bulkUpload
+ * @param {string} filePath - Absolute path to the uploaded temp CSV file
+ * @returns {Promise<{ total: number, inserted: number, failed: number, errors: Array<string> }>}
+ */
 async function bulkUpload(filePath) {
   const rows = [];
   const parseErrors = [];

@@ -1,13 +1,6 @@
 import { useState } from "react";
 import { useAuth }  from "../../auth/AuthContext";
-
-// Customer type options shown only when account_type === "customer"
-const CUSTOMER_TYPES = [
-  { value: "Dealer",       label: "Dealer" },
-  { value: "B2B Customer", label: "B2B Customer" },
-  { value: "B2C Customer", label: "B2C Customer" },
-  { value: "Employee",     label: "Employee" },
-];
+import { CUSTOMER_TYPES } from '../../config/constants';
 
 const SignupPage = ({ onSwitchToLogin }) => {
   const { register, loading } = useAuth();
@@ -119,7 +112,7 @@ const SignupPage = ({ onSwitchToLogin }) => {
                   onChange={(e) => set("customer_type", e.target.value)}
                 >
                   {CUSTOMER_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+                    <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
               </div>

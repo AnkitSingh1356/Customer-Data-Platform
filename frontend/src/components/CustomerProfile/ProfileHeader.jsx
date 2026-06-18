@@ -1,16 +1,32 @@
-// Derives up to two uppercase initials from the customer's full name.
+/**
+ * Derives up to two uppercase initials from the customer's full name.
+ * Usage: Used internally by ProfileHeader to generate the avatar fallback text.
+ * @param {string} [name=""] - The customer's full name
+ * @returns {string} Up to two uppercase initials (e.g. "JD" for "Jane Doe")
+ */
 const getInitials = (name = "") =>
   name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
-// Maps a 0-100 quality score to a traffic-light color (green/amber/red).
+/**
+ * Maps a 0-100 data quality score to a traffic-light color string.
+ * Usage: Used internally by ProfileHeader to colorize the quality score indicator.
+ * @param {number} score - Quality score between 0 and 100
+ * @returns {string} Hex color string: green (#22c55e) for ≥80, amber (#f59e0b) for ≥50, red (#ef4444) otherwise
+ */
 const qualityColor = (score) => {
   if (score >= 80) return "#22c55e";
   if (score >= 50) return "#f59e0b";
   return "#ef4444";
 };
 
-// Displays the customer's avatar, name, email, CDP ID, quality score,
-// data owner, and primary source — the identity summary row of the modal.
+/**
+ * Displays the customer identity summary row: avatar initials, name, email, CDP ID, quality score, data owner, and primary source.
+ * Usage: Rendered at the top of the customer profile modal above the details grid.
+ * @param {Object} props
+ * @param {Object} props.profile - Customer profile object with full_name, email, cdp_id, quality_score, data_owner, and primary_source
+ * @param {function} props.onClose - Callback invoked when the close button is clicked
+ * @returns {JSX.Element}
+ */
 const ProfileHeader = ({ profile, onClose }) => (
   <>
     <div className="vp-header">
