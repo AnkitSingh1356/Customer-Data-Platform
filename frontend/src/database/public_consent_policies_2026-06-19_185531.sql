@@ -1,0 +1,12 @@
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (1, 'CCPA - California Consumer Privacy', 'privacy', 'Active', '2026-05-22 10:50:35.775632');
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (2, 'Global Marketing Consent Policy', 'consent', 'Active', '2026-05-22 10:50:35.775632');
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (3, 'GDPR Data Processing Agreement', 'privacy', 'Active', '2026-05-22 10:50:35.775632');
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (4, 'Cookie Consent Policy', 'consent', 'Active', '2026-05-22 10:50:35.775632');
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (5, 'CCPA - California Consumer Privacy', 'privacy', 'Active', '2026-05-22 12:29:08.564725');
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (6, 'Global Marketing Consent Policy', 'consent', 'Active', '2026-05-22 12:29:08.564725');
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (7, 'GDPR Data Processing Agreement', 'privacy', 'Active', '2026-05-22 12:29:08.564725');
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (8, 'Cookie Consent Policy', 'consent', 'Active', '2026-05-22 12:29:08.564725');
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (9, 'CCPA - California Consumer Privacy', 'privacy', 'Active', '2026-06-10 12:44:48.017883');
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (10, 'Global Marketing Consent Policy', 'consent', 'Active', '2026-06-10 12:44:48.017883');
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (11, 'GDPR Data Processing Agreement', 'privacy', 'Active', '2026-06-10 12:44:48.017883');
+insert into "consent_policies" ("id", "policy_name", "policy_type", "status", "updated_at") values (12, 'Cookie Consent Policy', 'consent', 'Active', '2026-06-10 12:44:48.017883');

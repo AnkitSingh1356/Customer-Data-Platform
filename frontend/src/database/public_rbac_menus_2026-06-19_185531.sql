@@ -1,0 +1,12 @@
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('dashboard', 1, true, 'dashboard', 'Dashboard', NULL, 1);
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('customer360', 2, true, 'customer360', 'Customer 360', NULL, 2);
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('dealerNetwork', 3, true, 'dealer-network', 'Dealer Network', NULL, 3);
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('identityResolution', 4, true, 'identity-resolution', 'Identity Resolution', NULL, 4);
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('segments', 5, true, 'segments', 'Segments', NULL, 5);
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('behavioralAnalytics', 6, true, 'behavioral-analytics', 'Behavioral Analytics', NULL, 6);
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('promotional', 7, true, 'promotional', 'Promotional Effectiveness', NULL, 7);
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('consentCompliance', 8, true, 'consent-compliance', 'Consent & Compliance', NULL, 8);
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('accessManagement', 9, true, 'access-management', 'Access Management', NULL, 9);
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('dataModel', 10, true, 'data-model', 'Data Model & Uploads', NULL, 10);
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('releaseNotes', 11, true, 'release-notes', 'Release Notes', NULL, 11);
+insert into "rbac_menus" ("icon", "id", "is_active", "key", "label", "parent_key", "sort_order") values ('settings', 12, true, 'settings', 'Settings', NULL, 12);

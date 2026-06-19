@@ -1,0 +1,16 @@
+insert into "user_roles" ("role_id", "user_id") values (6, 4);
+insert into "user_roles" ("role_id", "user_id") values (3, 5);
+insert into "user_roles" ("role_id", "user_id") values (1, 3);
+insert into "user_roles" ("role_id", "user_id") values (2, 3);
+insert into "user_roles" ("role_id", "user_id") values (5, 7);
+insert into "user_roles" ("role_id", "user_id") values (6, 8);
+insert into "user_roles" ("role_id", "user_id") values (5, 8);
+insert into "user_roles" ("role_id", "user_id") values (6, 10);
+insert into "user_roles" ("role_id", "user_id") values (5, 11);
+insert into "user_roles" ("role_id", "user_id") values (3, 9);
+insert into "user_roles" ("role_id", "user_id") values (4, 12);
+insert into "user_roles" ("role_id", "user_id") values (2, 12);
+insert into "user_roles" ("role_id", "user_id") values (5, 12);
+insert into "user_roles" ("role_id", "user_id") values (4, 6);
+insert into "user_roles" ("role_id", "user_id") values (3, 6);
+insert into "user_roles" ("role_id", "user_id") values (2, 14);

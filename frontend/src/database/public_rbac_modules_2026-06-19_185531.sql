@@ -1,0 +1,10 @@
+insert into "rbac_modules" ("icon", "id", "is_active", "key", "label", "sort_order") values ('dealerNetwork', 2, true, 'dealer-network', 'Dealer Network', 2);
+insert into "rbac_modules" ("icon", "id", "is_active", "key", "label", "sort_order") values ('identityResolution', 3, true, 'identity-resolution', 'Identity Resolution', 3);
+insert into "rbac_modules" ("icon", "id", "is_active", "key", "label", "sort_order") values ('segments', 4, true, 'segments', 'Segments', 4);
+insert into "rbac_modules" ("icon", "id", "is_active", "key", "label", "sort_order") values ('behavioralAnalytics', 5, true, 'behavioral-analytics', 'Behavioral Analytics', 5);
+insert into "rbac_modules" ("icon", "id", "is_active", "key", "label", "sort_order") values ('promotional', 6, true, 'promotional', 'Promotional Effectiveness', 6);
+insert into "rbac_modules" ("icon", "id", "is_active", "key", "label", "sort_order") values ('consentCompliance', 7, true, 'consent-compliance', 'Consent & Compliance', 7);
+insert into "rbac_modules" ("icon", "id", "is_active", "key", "label", "sort_order") values ('accessManagement', 8, true, 'access-management', 'Access Management', 8);
+insert into "rbac_modules" ("icon", "id", "is_active", "key", "label", "sort_order") values ('dataModel', 9, true, 'data-model', 'Data Model & Uploads', 9);
+insert into "rbac_modules" ("icon", "id", "is_active", "key", "label", "sort_order") values ('customer360', 1, true, 'customer360', 'Customer 360', 1);
+insert into "rbac_modules" ("icon", "id", "is_active", "key", "label", "sort_order") values ('4r', 10, true, 'asdd', 'rtes', 0);

@@ -1,0 +1,9 @@
+insert into "flexible_attributes" ("attr_key", "attr_type", "attr_value", "created_at", "customer_id", "id") values ('Custom', 'Custom', 'Testing', '2026-05-15 13:09:05.808809+05:30', 401, 1);
+insert into "flexible_attributes" ("attr_key", "attr_type", "attr_value", "created_at", "customer_id", "id") values ('dhfh', 'Behavioral', 'jhfhjh', '2026-05-15 15:27:42.811182+05:30', 401, 2);
+insert into "flexible_attributes" ("attr_key", "attr_type", "attr_value", "created_at", "customer_id", "id") values ('jb', 'Demographic', 'b', '2026-06-18 11:27:50.222128+05:30', 423, 3);
+insert into "flexible_attributes" ("attr_key", "attr_type", "attr_value", "created_at", "customer_id", "id") values ('ABC', 'Behavioral', 'F', '2026-06-18 11:39:40.1404+05:30', 421, 4);
+insert into "flexible_attributes" ("attr_key", "attr_type", "attr_value", "created_at", "customer_id", "id") values ('Mr', 'Custom', 'Singh', '2026-06-19 17:03:50.222284+05:30', 422, 5);
+insert into "flexible_attributes" ("attr_key", "attr_type", "attr_value", "created_at", "customer_id", "id") values ('Mr', 'Behavioral', 'Singh', '2026-06-19 17:04:01.646093+05:30', 422, 6);
+insert into "flexible_attributes" ("attr_key", "attr_type", "attr_value", "created_at", "customer_id", "id") values ('Mr', 'Behavioral', 'Singh', '2026-06-19 17:04:10.145702+05:30', 422, 7);
+insert into "flexible_attributes" ("attr_key", "attr_type", "attr_value", "created_at", "customer_id", "id") values ('Mr', 'Behavioral', 'Singh', '2026-06-19 17:04:20.711577+05:30', 422, 8);
+insert into "flexible_attributes" ("attr_key", "attr_type", "attr_value", "created_at", "customer_id", "id") values ('Mr', 'Behavioral', 'Singh', '2026-06-19 17:04:28.455016+05:30', 422, 9);
