@@ -62,6 +62,10 @@ const ConsentCompliancePage = () => {
 
   const [selectedRecord, setSelectedRecord] = useState(null);
 
+  const [sortCol, setSortCol] = useState("customer_name");
+
+  const [sortDir, setSortDir] = useState("asc");
+
   const [toast, setToast] = useState({
     visible: false,
     message: "",
@@ -293,6 +297,11 @@ async function handleExport() {
   }
 }
 
+const handleSort = (col) => {
+  if (col === sortCol) setSortDir(d => d === "asc" ? "desc" : "asc");
+  else { setSortCol(col); setSortDir("asc"); }
+};
+
 // Derived from overview KPIs so the pie chart always reflects the latest dashboard fetch
 const chartData = useMemo(
   () => [
@@ -313,6 +322,18 @@ const chartData = useMemo(
   ],
   [overview],
 );
+
+const sortedRecords = useMemo(() => {
+  return [...records].sort((a, b) => {
+    let av = a[sortCol] ?? "";
+    let bv = b[sortCol] ?? "";
+    if (typeof av === "string") av = av.toLowerCase();
+    if (typeof bv === "string") bv = bv.toLowerCase();
+    if (av < bv) return sortDir === "asc" ? -1 : 1;
+    if (av > bv) return sortDir === "asc" ? 1 : -1;
+    return 0;
+  });
+}, [records, sortCol, sortDir]);
 
 const columns = useMemo(
   () => [
@@ -534,9 +555,12 @@ return (
 
       <DataTable
         columns={columns}
-        data={records}
+        data={sortedRecords}
         loading={tableLoading}
         emptyMessage="No consent records found."
+        sortCol={sortCol}
+        sortDir={sortDir}
+        onSort={handleSort}
       />
 
       <Pagination

@@ -7,6 +7,7 @@ import DealerRow from "../../components/DealerNetwork/DealerRow";
 import DealerDetailModal from "../../components/DealerNetwork/DealerDetailModal";
 
 import BulkUploadModal from "../../components/BulkUpload/BulkUploadModal";
+import Pagination from "../../components/common/Pagination";
 import { useRBAC } from "../../auth/RBACContext";
 import { BULK_UPLOAD_CONFIG } from "../../config/bulkUploadConfig";
 
@@ -28,7 +29,11 @@ const KpiCard = ({ icon, label, value }) => (
 
 const DealerNetworkPage = () => {
   const { hasPermission } = useRBAC();
-  const [search, setSearch] = useState("");
+  const [search,    setSearch]    = useState("");
+  const [sortCol,   setSortCol]   = useState("name");
+  const [sortDir,   setSortDir]   = useState("asc");
+  const [page,      setPage]      = useState(1);
+  const [limit,     setLimit]     = useState(10);
 
   // liveSearch is the debounced value passed to useDealers; search is the raw input
   const [liveSearch, setLiveSearch] = useState("");
@@ -45,10 +50,21 @@ const DealerNetworkPage = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setLiveSearch(search.trim());
+      setPage(1);
     }, 350);
 
     return () => clearTimeout(timer);
   }, [search]);
+
+  const handleSort = (col) => {
+    if (col === sortCol) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortCol(col);
+      setSortDir("asc");
+    }
+    setPage(1);
+  };
 
   const {
     dealers,
@@ -57,6 +73,26 @@ const DealerNetworkPage = () => {
     error,
     refetch,
   } = useDealers(liveSearch);
+
+  const sortedDealers = useMemo(() => {
+    const numericCols = ["contacts", "annual_revenue"];
+    return [...dealers].sort((a, b) => {
+      let av = a[sortCol] ?? "";
+      let bv = b[sortCol] ?? "";
+      if (numericCols.includes(sortCol)) { av = Number(av); bv = Number(bv); }
+      else { av = String(av).toLowerCase(); bv = String(bv).toLowerCase(); }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [dealers, sortCol, sortDir]);
+
+  const totalDealerPages = Math.ceil(sortedDealers.length / limit) || 1;
+
+  const pagedDealers = useMemo(() => {
+    const start = (page - 1) * limit;
+    return sortedDealers.slice(start, start + limit);
+  }, [sortedDealers, page, limit]);
 
   // Memoized so KPI cards don't re-render on unrelated state changes (e.g. modal open)
   const kpis = useMemo(
@@ -333,22 +369,26 @@ const DealerNetworkPage = () => {
           <thead>
             <tr>
               <th className="dn-th-expand" />
-
-              <th>DEALER</th>
-
-              <th>CODE</th>
-
-              <th>REGION</th>
-
-              <th>TIER</th>
-
-              <th className="dn-th-num">
-                CONTACTS
-              </th>
-
-              <th className="dn-th-num">
-                REVENUE
-              </th>
+              {[
+                { key: "name",           label: "DEALER",   cls: "" },
+                { key: "code",           label: "CODE",     cls: "" },
+                { key: "region",         label: "REGION",   cls: "" },
+                { key: "tier",           label: "TIER",     cls: "" },
+                { key: "contacts",       label: "CONTACTS", cls: "dn-th-num" },
+                { key: "annual_revenue", label: "REVENUE",  cls: "dn-th-num" },
+              ].map(({ key, label, cls }) => (
+                <th
+                  key={key}
+                  className={cls}
+                  onClick={() => handleSort(key)}
+                  style={{ cursor: "pointer", userSelect: "none" }}
+                >
+                  {label}
+                  <span className="dt-sort-icon" aria-hidden="true">
+                    {sortCol === key ? (sortDir === "asc" ? " ↑" : " ↓") : " ⇅"}
+                  </span>
+                </th>
+              ))}
             </tr>
           </thead>
 
@@ -378,7 +418,7 @@ const DealerNetworkPage = () => {
               )}
 
             {!loading &&
-              dealers.map((dealer) => (
+              pagedDealers.map((dealer) => (
                 <DealerRow
                   key={dealer.code}
                   dealer={dealer}
@@ -391,6 +431,14 @@ const DealerNetworkPage = () => {
         </table>
 
       </div>
+
+      <Pagination
+        page={page}
+        totalPages={totalDealerPages}
+        limit={limit}
+        onPageChange={setPage}
+        onLimitChange={(l) => { setLimit(l); setPage(1); }}
+      />
 
       {/* DETAIL MODAL */}
 
