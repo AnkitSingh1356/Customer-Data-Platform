@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { rbacApi } from "../../services/rbacService";
+import Pagination from "../common/Pagination";
 
 const EMPTY_FORM = { name: "", description: "" };
 
@@ -109,7 +110,8 @@ function DeleteConfirmModal({ role, onConfirm, onClose, loading }) {
 export default function RoleManagement() {
   const { authHeader } = useAuth();
 
-  const [data,    setData]    = useState({ roles: [], total: 0, page: 1, limit: 20 });
+  const [data,      setData]      = useState({ roles: [], total: 0, page: 1, limit: 20 });
+  const [roleLimit, setRoleLimit] = useState(20);
   const [search,  setSearch]  = useState("");
   const [loading, setLoading] = useState(false);
   const [saving,  setSaving]  = useState(false);
@@ -124,11 +126,11 @@ export default function RoleManagement() {
   const loadRoles = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const res = await rbacApi.getRoles({ page, limit: 20, search }, authHeader());
+      const res = await rbacApi.getRoles({ page, limit: roleLimit, search }, authHeader());
       setData(res);
     } catch (e) { showToast(e.message, "error"); }
     finally { setLoading(false); }
-  }, [search, authHeader]);
+  }, [search, roleLimit, authHeader]);
 
   useEffect(() => { loadRoles(1); }, [loadRoles]);
 
@@ -255,13 +257,13 @@ export default function RoleManagement() {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="am-pagination">
-          <button disabled={data.page <= 1} onClick={() => loadRoles(data.page - 1)} className="am-btn am-btn--xs am-btn--ghost">← Prev</button>
-          <span className="am-page-info">Page {data.page} of {totalPages}</span>
-          <button disabled={data.page >= totalPages} onClick={() => loadRoles(data.page + 1)} className="am-btn am-btn--xs am-btn--ghost">Next →</button>
-        </div>
-      )}
+      <Pagination
+        page={data.page}
+        totalPages={totalPages}
+        limit={roleLimit}
+        onPageChange={(p) => loadRoles(p)}
+        onLimitChange={(l) => setRoleLimit(l)}
+      />
 
       {modal?.type === "create" && (
         <RoleModal mode="create" onSave={handleCreate} onClose={() => setModal(null)} loading={saving} />
