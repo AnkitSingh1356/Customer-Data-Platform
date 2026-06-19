@@ -4,6 +4,7 @@ import { rbacApi } from "../../services/rbacService";
 import UserAccessSummary from "./UserAccessSummary";
 import { CUSTOMER_TYPES } from '../../config/constants';
 import SelectDropdown from "../common/SelectDropdown";
+import Pagination from "../common/Pagination";
 
 const EMPTY_FORM = {
   full_name: "", email: "", password: "",
@@ -239,7 +240,8 @@ function AssignRolesModal({ user, allRoles, onSave, onClose, loading }) {
 export default function UserManagement() {
   const { authHeader } = useAuth();
 
-  const [data,    setData]    = useState({ users: [], total: 0, page: 1, limit: 15 });
+  const [data,      setData]      = useState({ users: [], total: 0, page: 1, limit: 15 });
+  const [userLimit, setUserLimit] = useState(15);
   const [allRoles, setAllRoles] = useState([]);
   const [search,  setSearch]  = useState("");
   const [filter,  setFilter]  = useState("");
@@ -267,7 +269,7 @@ export default function UserManagement() {
     setLoading(true);
     try {
       const res = await rbacApi.getUsers(
-        { page, limit: 15, search, customer_type: filter },
+        { page, limit: userLimit, search, customer_type: filter },
         authHeader()
       );
       setData(res);
@@ -276,7 +278,7 @@ export default function UserManagement() {
     } finally {
       setLoading(false);
     }
-  }, [search, filter, authHeader]);
+  }, [search, filter, userLimit, authHeader]);
 
   useEffect(() => { loadUsers(1); loadRoles(); }, [loadUsers, loadRoles]);
 
@@ -419,13 +421,13 @@ export default function UserManagement() {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="am-pagination">
-          <button disabled={data.page <= 1} onClick={() => loadUsers(data.page - 1)} className="am-btn am-btn--xs am-btn--ghost">← Prev</button>
-          <span className="am-page-info">Page {data.page} of {totalPages}</span>
-          <button disabled={data.page >= totalPages} onClick={() => loadUsers(data.page + 1)} className="am-btn am-btn--xs am-btn--ghost">Next →</button>
-        </div>
-      )}
+      <Pagination
+        page={data.page}
+        totalPages={totalPages}
+        limit={userLimit}
+        onPageChange={(p) => loadUsers(p)}
+        onLimitChange={(l) => setUserLimit(l)}
+      />
 
       {modal?.type === "create" && (
         <UserModal mode="create" allRoles={allRoles} onSave={handleCreate} onClose={() => setModal(null)} loading={saving} />

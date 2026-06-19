@@ -33,6 +33,7 @@ import {
   import KpiCard        from "../../components/common/KpiCard";
   import ExportButton   from "../../components/common/ExportButton";
   import SelectDropdown from "../../components/common/SelectDropdown";
+  import Pagination     from "../../components/common/Pagination";
   import { useRBAC }    from "../../auth/RBACContext";
 
 import CampaignDetailsModal from "../../components/PromotionalEffectiveness/CampaignDetailsModal";
@@ -63,8 +64,11 @@ import CampaignDetailsModal from "../../components/PromotionalEffectiveness/Camp
     const [search, setSearch] =
       useState("");
     const debouncedSearch = useDebounce(search);
-    const [status, setStatus] =
-      useState("all");
+    const [status,   setStatus]   = useState("all");
+    const [sortCol,  setSortCol]  = useState("campaign_name");
+    const [sortDir,  setSortDir]  = useState("asc");
+    const [promoPage,  setPromoPage]  = useState(1);
+    const [promoLimit, setPromoLimit] = useState(10);
     const [
       selectedCampaign,
       setSelectedCampaign,
@@ -73,9 +77,10 @@ import CampaignDetailsModal from "../../components/PromotionalEffectiveness/Camp
     useEffect(() => {
       loadDashboard();
     }, []);
-    // Campaign table refetches whenever the debounced search or status filter changes
+    // Campaign table refetches whenever the debounced search or status filter changes; reset to page 1
     useEffect(() => {
       loadCampaigns();
+      setPromoPage(1);
     }, [debouncedSearch, status]);
   
     async function loadDashboard() {
@@ -198,7 +203,8 @@ import CampaignDetailsModal from "../../components/PromotionalEffectiveness/Camp
   
         {
           key: "budget",
-  
+          sortable: false,
+
           title: "BUDGET / SPENT",
   
           render: (row) => (
@@ -222,7 +228,8 @@ import CampaignDetailsModal from "../../components/PromotionalEffectiveness/Camp
   
         {
           key: "audience",
-  
+          sortable: false,
+
           title: "AUDIENCE",
   
           render: (row) =>
@@ -233,7 +240,8 @@ import CampaignDetailsModal from "../../components/PromotionalEffectiveness/Camp
   
         {
           key: "conversion",
-  
+          sortable: false,
+
           title: "CONVERSION",
   
           render: (row) =>
@@ -244,7 +252,8 @@ import CampaignDetailsModal from "../../components/PromotionalEffectiveness/Camp
   
         {
           key: "dates",
-  
+          sortable: false,
+
           title: "DATES",
   
           render: (row) => (
@@ -289,7 +298,34 @@ import CampaignDetailsModal from "../../components/PromotionalEffectiveness/Camp
       ],
       [],
     );
-  
+
+    const handlePromoSort = (col) => {
+      if (col === sortCol) {
+        setSortDir(d => d === "asc" ? "desc" : "asc");
+      } else {
+        setSortCol(col);
+        setSortDir("asc");
+      }
+      setPromoPage(1);
+    };
+
+    const promoTotalPages = Math.ceil(campaigns.length / promoLimit) || 1;
+
+    const pagedCampaigns = useMemo(() => {
+      const numericCols = ["total_budget", "spent_amount", "audience_size", "conversion_rate"];
+      const sorted = [...campaigns].sort((a, b) => {
+        let av = a[sortCol] ?? "";
+        let bv = b[sortCol] ?? "";
+        if (numericCols.includes(sortCol)) { av = Number(av); bv = Number(bv); }
+        else { av = String(av).toLowerCase(); bv = String(bv).toLowerCase(); }
+        if (av < bv) return sortDir === "asc" ? -1 : 1;
+        if (av > bv) return sortDir === "asc" ? 1 : -1;
+        return 0;
+      });
+      const start = (promoPage - 1) * promoLimit;
+      return sorted.slice(start, start + promoLimit);
+    }, [campaigns, sortCol, sortDir, promoPage, promoLimit]);
+
     return (
       <div className="promo-page">
         <div className="promo-header">
@@ -452,7 +488,17 @@ import CampaignDetailsModal from "../../components/PromotionalEffectiveness/Camp
   
           <DataTable
             columns={columns}
-            data={campaigns}
+            data={pagedCampaigns}
+            sortCol={sortCol}
+            sortDir={sortDir}
+            onSort={handlePromoSort}
+          />
+          <Pagination
+            page={promoPage}
+            totalPages={promoTotalPages}
+            limit={promoLimit}
+            onPageChange={setPromoPage}
+            onLimitChange={(l) => { setPromoLimit(l); setPromoPage(1); }}
           />
         </div>
   

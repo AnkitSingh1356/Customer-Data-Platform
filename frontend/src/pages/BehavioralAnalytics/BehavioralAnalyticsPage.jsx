@@ -63,6 +63,10 @@ function BehavioralAnalyticsPage() {
 
   const [totalPages, setTotalPages] = useState(1);
 
+  const [sortCol, setSortCol] = useState("timestamp");
+
+  const [sortDir, setSortDir] = useState("desc");
+
   // 400 ms debounce prevents activity refetch on every keystroke
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -243,6 +247,23 @@ function BehavioralAnalyticsPage() {
       alert("Failed to export analytics.");
     }
   }
+
+  const handleSort = (col) => {
+    if (col === sortCol) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("asc"); }
+  };
+
+  const sortedActivities = useMemo(() => {
+    return [...activities].sort((a, b) => {
+      let av = a[sortCol] ?? "";
+      let bv = b[sortCol] ?? "";
+      if (typeof av === "string") av = av.toLowerCase();
+      if (typeof bv === "string") bv = bv.toLowerCase();
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [activities, sortCol, sortDir]);
 
   const columns = useMemo(
     () => [
@@ -643,7 +664,13 @@ function BehavioralAnalyticsPage() {
         {activities.length === 0 ? (
           <div className="ba-empty-state">No activity found.</div>
         ) : (
-          <DataTable columns={columns} data={activities} />
+          <DataTable
+            columns={columns}
+            data={sortedActivities}
+            sortCol={sortCol}
+            sortDir={sortDir}
+            onSort={handleSort}
+          />
         )}
 
         <Pagination

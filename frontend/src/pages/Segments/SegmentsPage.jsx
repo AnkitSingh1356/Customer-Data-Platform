@@ -52,8 +52,10 @@ const SegmentsPage = ({ persona = "admin" }) => {
   const [selected,     setSelected]     = useState(null); 
   const [deleting,     setDeleting]     = useState(false);
   const [toast,        setToast]        = useState(null); 
-  const [page, setPage] = useState(1);
-const [limit, setLimit] = useState(5);
+  const [page,    setPage]    = useState(1);
+  const [limit,   setLimit]   = useState(5);
+  const [sortCol, setSortCol] = useState("created_at");
+  const [sortDir, setSortDir] = useState("desc");
 
   const showToast = (msg, type = "success") => setToast({ msg, type });
 
@@ -94,13 +96,29 @@ const [limit, setLimit] = useState(5);
   const totalMembers    = fmtNum(stats?.total_members    ?? 0);
   const avgSegmentSize  = fmtNum(stats?.avg_segment_size ?? 0);
 
-  // Segments are filtered server-side but paginated client-side from the full result set
-  const paginatedSegments = useMemo(() => {
-    const start = (page - 1) * limit;
-    const end = start + limit;
+  const handleSort = (col) => {
+    if (col === sortCol) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortCol(col);
+      setSortDir("asc");
+    }
+    setPage(1);
+  };
 
-    return segments.slice(start, end);
-  }, [segments, page, limit]);
+  // Sort client-side then paginate from the full filtered result set
+  const paginatedSegments = useMemo(() => {
+    const sorted = [...segments].sort((a, b) => {
+      let av = a[sortCol] ?? "";
+      let bv = b[sortCol] ?? "";
+      if (sortCol === "member_count") { av = Number(av); bv = Number(bv); }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    const start = (page - 1) * limit;
+    return sorted.slice(start, start + limit);
+  }, [segments, page, limit, sortCol, sortDir]);
 
   const totalPages = Math.ceil(segments.length / limit) || 1;
 
@@ -153,7 +171,8 @@ const [limit, setLimit] = useState(5);
       key: "rules",
       title: "Rules",
       cellClassName: "seg-td-rules",
-  
+      sortable: false,
+
       render: (seg) => rulesLabel(seg.rules),
     },
   
@@ -334,6 +353,9 @@ const [limit, setLimit] = useState(5);
       ? "No segments found. Click + New Segment to create one."
       : "No segments found."
   }
+  sortCol={sortCol}
+  sortDir={sortDir}
+  onSort={handleSort}
 />
 
     <Pagination

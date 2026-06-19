@@ -43,11 +43,30 @@ const Customer360Page = () => {
   const [page,             setPage]             = useState(1);
   const [limit,            setLimit]            = useState(5);
   const [total,            setTotal]            = useState(0);
+  const [sortCol,          setSortCol]          = useState("customer_name");
+  const [sortDir,          setSortDir]          = useState("asc");
 
   const totalPages = useMemo(
     () => Math.ceil(total / limit) || 1,
     [total, limit],
   );
+
+  const handleSort = (col) => {
+    if (col === sortCol) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("asc"); }
+  };
+
+  const sortedCustomers = useMemo(() => {
+    return [...customers].sort((a, b) => {
+      let av = a[sortCol] ?? "";
+      let bv = b[sortCol] ?? "";
+      if (typeof av === "string") av = av.toLowerCase();
+      if (typeof bv === "string") bv = bv.toLowerCase();
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [customers, sortCol, sortDir]);
   const formatGrowth = (value) => {
     if (value == null || isNaN(value)) return "0%";
   
@@ -119,7 +138,8 @@ const Customer360Page = () => {
       ),
       headerClassName: "col-check",
       cellClassName: "col-check",
-  
+      sortable: false,
+
       render: () => (
         <input type="checkbox" />
       ),
@@ -166,7 +186,8 @@ const Customer360Page = () => {
     {
       key: "view",
       title: "VIEW",
-  
+      sortable: false,
+
       render: (c) => (
         <button
           className="btn-view-profile"
@@ -368,17 +389,23 @@ const Customer360Page = () => {
         </div>
       </div>
 
-      {loading && <div className="c360-loading">Loading…</div>}
-
       {/* ── Table ───────────────────────────────────────────── */}
       <DataTable
   columns={columns}
-  data={customers}
+  data={sortedCustomers}
   loading={loading}
   wrapperClassName="table-wrapper"
   tableClassName="app-table"
   emptyClassName="c360-empty"
   emptyMessage="No customer records found."
+  wrapperStyle={{
+    minHeight: `${limit * 72 + 52}px`,
+    opacity: loading ? 0.55 : 1,
+    transition: "opacity 0.15s",
+  }}
+  sortCol={sortCol}
+  sortDir={sortDir}
+  onSort={handleSort}
 />
 
       <Pagination

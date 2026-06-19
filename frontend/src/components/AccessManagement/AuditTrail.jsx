@@ -3,6 +3,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { auditApi } from "../../services/rbacService";
 import { ACTION_META } from "../../config/constants";
 import SelectDropdown from "../common/SelectDropdown";
+import Pagination from "../common/Pagination";
 
 const ALL_ACTIONS = Object.keys(ACTION_META);
 
@@ -117,7 +118,8 @@ export default function AuditTrail() {
   const { authHeader } = useAuth();
 
   // Stores paginated log response; page/limit kept here to drive pagination UI.
-  const [data,    setData]    = useState({ logs: [], total: 0, page: 1, limit: 20 });
+  const [data,       setData]       = useState({ logs: [], total: 0, page: 1, limit: 20 });
+  const [auditLimit, setAuditLimit] = useState(20);
   const [loading, setLoading] = useState(false);
   // filters.from/to are ISO date strings sent as query params for server-side filtering.
   const [filters, setFilters] = useState({ action: "", search: "", from: "", to: "" });
@@ -131,14 +133,14 @@ export default function AuditTrail() {
   const load = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const res = await auditApi.getLogs({ ...filters, page, limit: 20 }, authHeader());
+      const res = await auditApi.getLogs({ ...filters, page, limit: auditLimit }, authHeader());
       setData(res);
     } catch (e) {
       showToast(e.message);
     } finally {
       setLoading(false);
     }
-  }, [filters, authHeader]);
+  }, [filters, auditLimit, authHeader]);
 
   useEffect(() => { load(1); }, [load]);
 
@@ -248,13 +250,13 @@ export default function AuditTrail() {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="am-pagination">
-          <button disabled={data.page <= 1} onClick={() => load(data.page - 1)} className="am-btn am-btn--xs am-btn--ghost">← Prev</button>
-          <span className="am-page-info">Page {data.page} of {totalPages} ({data.total} entries)</span>
-          <button disabled={data.page >= totalPages} onClick={() => load(data.page + 1)} className="am-btn am-btn--xs am-btn--ghost">Next →</button>
-        </div>
-      )}
+      <Pagination
+        page={data.page}
+        totalPages={totalPages}
+        limit={auditLimit}
+        onPageChange={(p) => load(p)}
+        onLimitChange={(l) => setAuditLimit(l)}
+      />
     </div>
   );
 }
